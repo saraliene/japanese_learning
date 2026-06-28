@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Japanese Learning App</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --surface-0:#f1efe8;--surface-1:#f7f6f2;--surface-2:#ffffff;
+  --text-primary:#1a1a18;--text-secondary:#5f5e5a;--text-muted:#888780;
+  --border:rgba(0,0,0,0.1);--border-strong:rgba(0,0,0,0.18);
+  --border-accent:#185fa5;--bg-accent:#e6f1fb;--text-accent:#185fa5;
+  --bg-pro:#eeedfe;--text-pro:#534ab7;--radius:8px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --surface-0:#1a1a18;--surface-1:#242422;--surface-2:#2e2e2b;
+    --text-primary:#f0ede6;--text-secondary:#a8a59e;--text-muted:#6e6d69;
+    --border:rgba(255,255,255,0.1);--border-strong:rgba(255,255,255,0.18);
+    --border-accent:#85b7eb;--bg-accent:#042c53;--text-accent:#85b7eb;
+    --bg-pro:#26215c;--text-pro:#afa9ec;
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--surface-0);color:var(--text-primary);min-height:100vh;padding:20px;}
+.app-wrapper{max-width:960px;margin:0 auto;background:var(--surface-2);border-radius:16px;border:0.5px solid var(--border);overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);}
+.app-header{padding:16px 20px;border-bottom:0.5px solid var(--border);background:var(--surface-1);display:flex;align-items:center;gap:12px;}
+.app-header h1{font-size:18px;font-weight:500;}
+.app-header .sub{font-size:13px;color:var(--text-muted);}
+.nav{display:flex;gap:4px;padding:10px 16px;border-bottom:0.5px solid var(--border);background:var(--surface-2);overflow-x:auto;}
+.nav-btn{padding:7px 14px;border-radius:var(--radius);border:0.5px solid transparent;font-size:13px;cursor:pointer;white-space:nowrap;background:transparent;color:var(--text-secondary);transition:all .15s;font-family:inherit;}
+.nav-btn:hover{background:var(--surface-1);color:var(--text-primary);}
+.nav-btn.active{background:var(--bg-accent);color:var(--text-accent);border-color:var(--border-accent);font-weight:500;}
+.panel{display:none;padding:20px;}.panel.active{display:block;}
+h2{font-size:18px;font-weight:500;margin-bottom:4px;}
+.subtitle{font-size:13px;color:var(--text-muted);margin-bottom:20px;}
+.section-label{font-size:11px;font-weight:500;color:var(--text-muted);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.06em;}
+/* writing */
+.writing-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:600px){.writing-grid,.chat-layout,.lit-layout,.collab-canvases{grid-template-columns:1fr;}}
+.char-selector{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;}
+.char-btn{width:38px;height:38px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--surface-1);font-size:17px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;color:var(--text-primary);font-family:inherit;}
+.char-btn:hover{border-color:var(--border-accent);color:var(--text-accent);}
+.char-btn.selected{background:var(--bg-accent);border-color:var(--border-accent);color:var(--text-accent);}
+.canvas-wrap{background:var(--surface-1);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;}
+canvas{display:block;touch-action:none;cursor:crosshair;width:100%;height:auto;}
+canvas.readonly{cursor:default;}
+.canvas-controls,.collab-ctrl{display:flex;gap:8px;padding:10px;border-top:0.5px solid var(--border);}
+.canvas-controls button,.collab-ctrl button{flex:1;padding:7px;font-size:12px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--surface-2);color:var(--text-secondary);cursor:pointer;font-family:inherit;transition:all .15s;}
+.canvas-controls button:hover,.collab-ctrl button:hover{background:var(--surface-1);color:var(--text-primary);}
+.char-display{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;padding:20px;background:var(--surface-1);border-radius:12px;border:0.5px solid var(--border);min-height:160px;}
+.char-big{font-size:80px;line-height:1;}.char-roman{font-size:16px;color:var(--text-secondary);}
+.char-hint{font-size:12px;color:var(--text-muted);text-align:center;}
+/* kana */
+.kana-table{display:grid;grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:5px;}
+.kana-cell{background:var(--surface-1);border:0.5px solid var(--border);border-radius:var(--radius);padding:7px 4px;text-align:center;cursor:pointer;transition:all .15s;}
+.kana-cell:hover{background:var(--bg-accent);border-color:var(--border-accent);}
+.kana-cell .k{font-size:20px;display:block;}.kana-cell .r{font-size:11px;color:var(--text-muted);display:block;margin-top:2px;}
+/* conversation */
+.chat-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chat-area{display:flex;flex-direction:column;background:var(--surface-1);border-radius:12px;border:0.5px solid var(--border);overflow:hidden;}
+.chat-header{padding:10px 14px;border-bottom:0.5px solid var(--border);font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}.dot-l{background:#1D9E75;}.dot-n{background:#7F77DD;}
+.messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:260px;max-height:320px;}
+.msg{max-width:85%;padding:8px 12px;border-radius:10px;font-size:14px;line-height:1.5;}
+.msg-l{background:var(--bg-accent);color:var(--text-primary);align-self:flex-end;border-bottom-right-radius:3px;}
+.msg-n{background:var(--bg-pro);color:var(--text-primary);align-self:flex-start;border-bottom-left-radius:3px;}
+.msg-jp{font-size:16px;}.msg-rd{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.chat-input-row{display:flex;gap:8px;padding:10px;border-top:0.5px solid var(--border);}
+.chat-input-row input{flex:1;padding:7px 10px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--surface-2);color:var(--text-primary);font-size:13px;font-family:inherit;outline:none;}
+.chat-input-row input:focus{border-color:var(--border-accent);}
+.chat-input-row button{padding:7px 14px;border-radius:var(--radius);border:0.5px solid var(--border-accent);background:var(--bg-accent);color:var(--text-accent);font-size:13px;cursor:pointer;font-weight:500;font-family:inherit;}
+.phrase-card{background:var(--surface-1);border:0.5px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .15s;margin-bottom:8px;}
+.phrase-card:hover{border-color:var(--border-accent);}
+.phrase-jp{font-size:17px;}.phrase-rd{font-size:12px;color:var(--text-muted);margin-top:2px;}.phrase-en{font-size:13px;color:var(--text-secondary);margin-top:4px;}
+.phrase-label{font-size:11px;font-weight:500;padding:2px 7px;border-radius:10px;background:var(--bg-accent);color:var(--text-accent);display:inline-block;margin-top:4px;}
+/* pronunciation */
+.pron-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
+.pron-card{background:var(--surface-1);border:0.5px solid var(--border);border-radius:12px;padding:16px;}
+.pron-title{font-size:13px;font-weight:500;margin-bottom:12px;color:var(--text-secondary);}
+.kana-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:0.5px solid var(--border);gap:8px;}
+.kana-row:last-child{border-bottom:none;}
+.kana{font-size:22px;flex-shrink:0;}.romaji{font-size:12px;color:var(--text-muted);line-height:1.4;}
+.mora-line{height:2px;width:100%;margin-top:6px;background:var(--border);border-radius:1px;}
+.mora-line.high{background:var(--text-accent);}
+.mora-char{font-size:18px;display:block;text-align:center;}
+.pitch-word{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:4px;}.mora{min-width:28px;}
+/* literature */
+.lit-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.text-panel{background:var(--surface-1);border-radius:12px;border:0.5px solid var(--border);padding:16px;}
+.text-panel h3{font-size:14px;font-weight:500;margin-bottom:4px;}
+.text-panel .author{font-size:12px;color:var(--text-muted);margin-bottom:14px;}
+.jp-text{font-size:20px;line-height:2.2;}
+.word{cursor:pointer;border-radius:3px;padding:0 2px;transition:background .1s;}
+.word:hover{background:var(--bg-accent);color:var(--text-accent);}
+.annotation{background:var(--surface-1);border-radius:12px;border:0.5px solid var(--border);padding:16px;}
+.ann-empty{color:var(--text-muted);font-size:13px;text-align:center;padding:40px 0;}
+.ann-word{font-size:30px;margin-bottom:4px;}.ann-reading{font-size:14px;color:var(--text-muted);margin-bottom:10px;}
+.ann-def{font-size:14px;line-height:1.6;margin-bottom:10px;}
+.ann-ex{font-size:13px;color:var(--text-secondary);padding:10px;background:var(--surface-2);border-radius:var(--radius);border-left:2px solid var(--border-accent);white-space:pre-line;}
+/* ── Collab Kanji ── */
+.collab-setup{background:var(--surface-1);border:0.5px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;}
+.setup-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+.setup-row label{font-size:12px;color:var(--text-muted);display:block;margin-bottom:5px;}
+.setup-row input[type=text]{padding:8px 12px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--surface-2);color:var(--text-primary);font-size:14px;font-family:inherit;outline:none;}
+.setup-row input[type=text]:focus{border-color:var(--border-accent);}
+.kanji-in{font-size:28px;width:70px;text-align:center;}
+.btn-primary{padding:8px 18px;border-radius:var(--radius);border:0.5px solid var(--border-accent);background:var(--bg-accent);color:var(--text-accent);font-size:13px;cursor:pointer;font-weight:500;font-family:inherit;white-space:nowrap;align-self:flex-end;}
+.btn-primary:hover{opacity:.85;}
+.btn-ghost{padding:6px 12px;border-radius:var(--radius);border:0.5px solid var(--border);background:transparent;color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:inherit;}
+.btn-ghost:hover{background:var(--surface-1);}
+.status-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius);background:var(--surface-1);border:0.5px solid var(--border);margin-bottom:16px;font-size:13px;flex-wrap:wrap;}
+.sdot{width:8px;height:8px;border-radius:50%;background:var(--text-muted);flex-shrink:0;}
+.sdot.ok{background:#1D9E75;}.sdot.wait{background:#EF9F27;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.stext{color:var(--text-secondary);}
+.room-code{font-family:monospace;font-size:13px;background:var(--surface-2);border:0.5px solid var(--border);border-radius:var(--radius);padding:4px 10px;color:var(--text-primary);cursor:pointer;user-select:all;}
+.room-code:hover{border-color:var(--border-accent);}
+.target-display{text-align:center;padding:12px 16px;background:var(--surface-1);border:0.5px solid var(--border);border-radius:12px;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:20px;}
+.target-big{font-size:64px;line-height:1;}
+.target-info{text-align:left;}
+.target-info p{font-size:12px;color:var(--text-muted);margin-top:4px;}
+.collab-canvases{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.collab-box{border-radius:12px;border:0.5px solid var(--border);overflow:hidden;background:var(--surface-2);}
+.collab-box.mine{border-color:var(--border-accent);}
+.collab-box-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--border);background:var(--surface-1);}
+.collab-name{font-size:13px;font-weight:500;display:flex;align-items:center;gap:7px;}
+.ndot{width:8px;height:8px;border-radius:50%;background:var(--text-accent);}
+.ndot.other{background:#7F77DD;}
+.cbadge{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-accent);color:var(--text-accent);}
+.cbadge.other{background:var(--bg-pro);color:var(--text-pro);}
+.partner-hint{padding:8px 12px;border-top:0.5px solid var(--border);background:var(--surface-1);font-size:11px;color:var(--text-muted);}
+/* ── Game mode ── */
+.sport-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.sport-tab{padding:8px 16px;border-radius:var(--radius);border:0.5px solid var(--border);font-size:13px;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit;transition:all .15s;}
+.sport-tab:hover{background:var(--surface-1);}
+.sport-tab.active{font-weight:500;}
+.sport-tab.cycling.active{background:#e6f1fb;color:#185fa5;border-color:#185fa5;}
+.sport-tab.tennis.active{background:#eaf3de;color:#3b6d11;border-color:#639922;}
+.sport-tab.surfing.active{background:#e1f5ee;color:#0f6e56;border-color:#1D9E75;}
+.game-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+@media(max-width:640px){.game-layout{grid-template-columns:1fr;}}
+.game-canvas-wrap{border-radius:12px;border:0.5px solid var(--border);overflow:hidden;background:var(--surface-2);}
+.game-canvas-header{padding:10px 14px;border-bottom:0.5px solid var(--border);background:var(--surface-1);font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:space-between;}
+.game-scene{border-radius:12px;border:0.5px solid var(--border);overflow:hidden;}
+.game-controls-row{display:flex;gap:8px;padding:10px;border-top:0.5px solid var(--border);background:var(--surface-1);}
+.game-controls-row button{flex:1;padding:7px;font-size:12px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--surface-2);color:var(--text-secondary);cursor:pointer;font-family:inherit;}
+.game-controls-row button:hover{background:var(--surface-1);color:var(--text-primary);}
+.power-bar-wrap{margin:12px 0;background:var(--surface-1);border-radius:var(--radius);border:0.5px solid var(--border);overflow:hidden;height:14px;}
+.power-bar{height:100%;width:0%;transition:width .2s;border-radius:var(--radius);}
+.power-bar.cycling{background:linear-gradient(90deg,#185fa5,#5DCAA5);}
+.power-bar.tennis{background:linear-gradient(90deg,#639922,#c0dd97);}
+.power-bar.surfing{background:linear-gradient(90deg,#0f6e56,#5DCAA5);}
+.game-char-selector{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;}
+.game-msg{font-size:13px;color:var(--text-secondary);text-align:center;padding:6px;min-height:28px;font-weight:500;}
+.game-score{font-size:24px;font-weight:500;text-align:center;}
+.char-picker{background:var(--surface-1);border:0.5px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;}
+.char-picker-header{font-size:13px;font-weight:500;margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.char-picker-tabs{display:flex;gap:4px;flex-wrap:wrap;}
+.ptab{padding:4px 10px;border-radius:var(--radius);border:0.5px solid var(--border);font-size:12px;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit;}
+.ptab.active{background:var(--bg-accent);color:var(--text-accent);border-color:var(--border-accent);}
+.picker-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;max-height:130px;overflow-y:auto;}
+.pk-btn{min-width:36px;height:36px;padding:0 6px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--surface-2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-primary);transition:all .12s;font-family:inherit;}
+.pk-btn:hover{border-color:var(--border-accent);color:var(--text-accent);background:var(--bg-accent);}
+.pk-btn.active-char{background:var(--bg-accent);border-color:var(--border-accent);color:var(--text-accent);font-weight:500;}
+/* custom input row */
+.custom-char-row{display:flex;gap:8px;align-items:center;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);flex-wrap:wrap;}
+.custom-char-row label{font-size:12px;color:var(--text-muted);}
+.custom-char-row input{padding:6px 10px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--surface-2);color:var(--text-primary);font-size:20px;font-family:inherit;outline:none;width:200px;}
+.custom-char-row input:focus{border-color:var(--border-accent);}
+.custom-char-row button{padding:7px 14px;border-radius:var(--radius);border:0.5px solid var(--border-accent);background:var(--bg-accent);color:var(--text-accent);font-size:13px;cursor:pointer;font-family:inherit;font-weight:500;}
+/* phrase mode */
+.phrase-target{background:var(--surface-1);border:0.5px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;font-size:22px;line-height:1.8;letter-spacing:.05em;}
+.phrase-target .reading{font-size:12px;color:var(--text-muted);margin-top:4px;font-size:13px;}
+.phrase-target .meaning{font-size:13px;color:var(--text-secondary);margin-top:2px;}
+.phrase-canvas-wrap{background:var(--surface-2);border-top:0.5px solid var(--border);}
+/* mode toggle */
+.mode-toggle{display:flex;gap:4px;margin-bottom:16px;}
+.mode-btn{flex:1;padding:8px;border-radius:var(--radius);border:0.5px solid var(--border);font-size:13px;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit;transition:all .15s;}
+.mode-btn.active{background:var(--bg-accent);color:var(--text-accent);border-color:var(--border-accent);font-weight:500;}
+</style>
+</head>
+<body>
+<div class="app-wrapper">
+  <div class="app-header">
+    <span style="font-size:24px">🇯🇵</span>
+    <div><h1>Japanese learning</h1><span class="sub">For a native speaker and learner to practice together</span></div>
+  </div>
+  <nav class="nav">
+    <button class="nav-btn active" onclick="switchPanel('writing',this)">✍️ Writing</button>
+    <button class="nav-btn" onclick="switchPanel('kana',this)">あ Kana chart</button>
+    <button class="nav-btn" onclick="switchPanel('kanji',this)">漢字 Kanji together</button>
+    <button class="nav-btn" onclick="switchPanel('game',this)">🎮 Game mode</button>
+    <button class="nav-btn" onclick="switchPanel('conversation',this)">💬 Conversation</button>
+    <button class="nav-btn" onclick="switchPanel('pronunciation',this)">🔊 Pronunciation</button>
+    <button class="nav-btn" onclick="switchPanel('literature',this)">📖 Literature</button>
+  </nav>
+
+  <!-- Writing -->
+  <div id="panel-writing" class="panel active">
+    <h2>Character writing practice</h2>
+    <p class="subtitle">Select a character, then trace it on the canvas below.</p>
+    <div class="section-label">Hiragana</div>
+    <div class="char-selector" id="hsel"></div>
+    <div class="section-label">Katakana</div>
+    <div class="char-selector" id="ksel"></div>
+    <div class="writing-grid" style="margin-top:16px">
+      <div>
+        <div class="canvas-wrap">
+          <canvas id="drawCanvas" width="400" height="320"></canvas>
+          <div class="canvas-controls">
+            <button onclick="clearCanvas()">Clear</button>
+            <button onclick="undoStroke()">Undo</button>
+            <button onclick="toggleGuide()">Guide on/off</button>
+          </div>
+        </div>
+      </div>
+      <div class="char-display">
+        <div class="char-big" id="charBig">あ</div>
+        <div class="char-roman" id="charRoman">a</div>
+        <div class="char-hint" id="charHint">Select a character above to practice it</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kana -->
+  <div id="panel-kana" class="panel">
+    <h2>Kana reference</h2>
+    <p class="subtitle">All hiragana and katakana. Tap to jump to writing practice.</p>
+    <div class="section-label">Hiragana</div><div class="kana-table" id="kana-h"></div>
+    <div class="section-label">Katakana</div><div class="kana-table" id="kana-k"></div>
+  </div>
+
+  <!-- Collab Kanji -->
+  <div id="panel-kanji" class="panel">
+    <h2>Kanji — practice together</h2>
+    <p class="subtitle">Type any kanji, enter your name, and share the room code with your partner. You both draw simultaneously and see each other's strokes live.</p>
+
+    <div class="collab-setup" id="cSetup">
+      <div style="font-size:14px;font-weight:500;margin-bottom:14px">Set up a session</div>
+      <div class="setup-row">
+        <div><label>Your name</label><input type="text" id="myName" placeholder="e.g. Yuki" maxlength="20" style="width:140px"></div>
+        <div><label>Kanji to practice</label><input type="text" id="kanjiTarget" class="kanji-in" placeholder="山" maxlength="2"></div>
+        <div><label>Room code — leave blank to create new, or paste partner's code to join</label><input type="text" id="roomIn" placeholder="e.g. jp-abc123" style="width:240px"></div>
+        <button class="btn-primary" onclick="startSession()">Start session</button>
+      </div>
+    </div>
+
+    <div id="cActive" style="display:none">
+      <div class="status-bar">
+        <div class="sdot" id="sDot"></div>
+        <span class="stext" id="sText">Connecting…</span>
+        <span style="margin-left:auto;font-size:12px;color:var(--text-muted)">Room code:</span>
+        <span class="room-code" id="roomDisplay" onclick="copyRoom()" title="Click to copy"></span>
+        <button class="btn-ghost" onclick="endSession()">Leave</button>
+      </div>
+
+      <!-- Mode toggle -->
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="modeCharBtn" onclick="setMode('char')">Single character</button>
+        <button class="mode-btn" id="modePhraseBtn" onclick="setMode('phrase')">Phrase / sentence</button>
+      </div>
+
+      <!-- Character picker -->
+      <div class="char-picker" id="charPickerPanel">
+        <div class="char-picker-header">
+          <span>Pick a character to practice:</span>
+          <div class="char-picker-tabs">
+            <button class="ptab active" onclick="showPickerTab('hiragana',this)">Hiragana</button>
+            <button class="ptab" onclick="showPickerTab('katakana',this)">Katakana</button>
+            <button class="ptab" onclick="showPickerTab('kanji',this)">Common kanji</button>
+          </div>
+        </div>
+        <div class="picker-grid" id="pickerGrid"></div>
+        <div class="custom-char-row">
+          <label>Or type any character / phrase:</label>
+          <input type="text" id="customCharInput" placeholder="e.g. 友 or ありがとう" maxlength="30">
+          <button onclick="applyCustomChar()">Set</button>
+        </div>
+      </div>
+
+      <!-- Phrase picker -->
+      <div class="char-picker" id="phrasePickerPanel" style="display:none">
+        <div class="char-picker-header">
+          <span>Pick a phrase to practice writing:</span>
+          <div class="char-picker-tabs">
+            <button class="ptab active" onclick="showPhraseTab('beginner',this)">Beginner</button>
+            <button class="ptab" onclick="showPhraseTab('daily',this)">Daily life</button>
+            <button class="ptab" onclick="showPhraseTab('polite',this)">Polite forms</button>
+            <button class="ptab" onclick="showPhraseTab('proverbs',this)">Proverbs</button>
+          </div>
+        </div>
+        <div id="phrasePickerList" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;"></div>
+        <div class="custom-char-row">
+          <label>Or type your own phrase:</label>
+          <input type="text" id="customPhraseInput" placeholder="e.g. おはようございます" maxlength="40">
+          <button onclick="applyCustomPhrase()">Set</button>
+        </div>
+      </div>
+
+      <!-- Current target display -->
+      <div class="target-display" id="tDisplay" style="display:none">
+        <span class="target-big" id="tBig"></span>
+        <div class="target-info">
+          <strong id="tLabel" style="font-size:16px"></strong>
+          <p id="tSub" style="font-size:12px;color:var(--text-muted);margin-top:4px"></p>
+        </div>
+      </div>
+
+      <div class="collab-canvases">
+        <div class="collab-box mine">
+          <div class="collab-box-header">
+            <div class="collab-name"><div class="ndot"></div><span id="myNameLabel">You</span></div>
+            <span class="cbadge">your canvas</span>
+          </div>
+          <canvas id="myCanvas" width="420" height="360"></canvas>
+          <div class="collab-ctrl">
+            <button onclick="clearMine()">Clear</button>
+            <button onclick="undoMine()">Undo</button>
+            <button onclick="toggleMineGuide()">Guide on/off</button>
+          </div>
+        </div>
+        <div class="collab-box">
+          <div class="collab-box-header">
+            <div class="collab-name"><div class="ndot other"></div><span id="partnerLabel">Partner</span></div>
+            <span class="cbadge other">their canvas</span>
+          </div>
+          <canvas id="partnerCanvas" class="readonly" width="420" height="360"></canvas>
+          <div class="partner-hint">Live — strokes appear as your partner draws</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conversation -->
+  <div id="panel-conversation" class="panel">
+    <h2>Conversation practice</h2>
+    <p class="subtitle">Tap a phrase to load it into the chat, or type freely.</p>
+    <div class="chat-layout">
+      <div class="chat-area">
+        <div class="chat-header">
+          <span class="dot dot-l"></span> Learner
+          <span style="margin-left:auto;display:flex;align-items:center;gap:6px"><span class="dot dot-n"></span> Native speaker</span>
+        </div>
+        <div class="messages" id="messages">
+          <div class="msg msg-n">
+            <div class="msg-jp">こんにちは！今日は何を練習しますか？</div>
+            <div class="msg-rd">Konnichiwa! Kyō wa nani o renshū shimasu ka?</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:3px">Hello! What will we practice today?</div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <input id="chatInput" placeholder="Type in Japanese or English…" onkeydown="if(event.key==='Enter')sendMsg()">
+          <button onclick="sendMsg()">Send</button>
+        </div>
+      </div>
+      <div>
+        <div class="section-label" style="margin-top:0">Beginner phrases — tap to use</div>
+        <div id="phrases-panel"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pronunciation -->
+  <div id="panel-pronunciation" class="panel">
+    <h2>Pronunciation guide</h2>
+    <p class="subtitle">Japanese vowels are pure and consistent. Master these five sounds first.</p>
+    <div class="pron-grid">
+      <div class="pron-card"><div class="pron-title">The five vowels</div><div id="vowels-list"></div></div>
+      <div class="pron-card"><div class="pron-title">Tricky consonants</div><div id="consonants-list"></div></div>
+      <div class="pron-card" style="grid-column:1/-1">
+        <div class="pron-title">Pitch accent — Tokyo dialect</div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Japanese uses pitch (high/low tone), not stress. Same spelling, different pitch = different word:</p>
+        <div style="display:flex;gap:40px;flex-wrap:wrap">
+          <div><div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">橋 (hashi) — bridge</div><div class="pitch-word"><div class="mora"><span class="mora-char">は</span><div class="mora-line"></div></div><div class="mora"><span class="mora-char">し</span><div class="mora-line high"></div></div></div><div style="font-size:11px;color:var(--text-muted);margin-top:4px">Low → High</div></div>
+          <div><div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">箸 (hashi) — chopsticks</div><div class="pitch-word"><div class="mora"><span class="mora-char">は</span><div class="mora-line high"></div></div><div class="mora"><span class="mora-char">し</span><div class="mora-line"></div></div></div><div style="font-size:11px;color:var(--text-muted);margin-top:4px">High → Low</div></div>
+          <div><div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">端 (hashi) — edge</div><div class="pitch-word"><div class="mora"><span class="mora-char">は</span><div class="mora-line high"></div></div><div class="mora"><span class="mora-char">し</span><div class="mora-line high"></div></div></div><div style="font-size:11px;color:var(--text-muted);margin-top:4px">High → High</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Literature -->
+  <div id="panel-literature" class="panel">
+    <h2>Reading & literature</h2>
+    <p class="subtitle">Tap any word to see its reading and meaning.</p>
+    <div class="lit-layout">
+      <div class="text-panel">
+        <h3>ももたろう (Momotarō)</h3>
+        <div class="author">Classic Japanese folktale — beginner friendly</div>
+        <div class="jp-text" id="lit-text"></div>
+      </div>
+      <div class="annotation" id="annotation"><div class="ann-empty">Tap a word in the text to see its meaning, reading, and an example sentence.</div></div>
+    </div>
+  </div>
+  <!-- Game mode -->
+  <div id="panel-game" class="panel">
+    <h2>Game mode</h2>
+    <p class="subtitle">Draw the character to power up your athlete. More strokes = more momentum. Finish the character to complete the challenge!</p>
+
+    <div class="sport-tabs">
+      <button class="sport-tab cycling active" onclick="setSport('cycling',this)">🚴 Cycling</button>
+      <button class="sport-tab tennis" onclick="setSport('tennis',this)">🎾 Tennis</button>
+      <button class="sport-tab surfing" onclick="setSport('surfing',this)">🏄 Surfing</button>
+    </div>
+
+
+    <div style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:12px;color:var(--text-muted)">Character to practice</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span id="gameCharCount" style="font-size:12px;color:var(--text-muted)"></span>
+          <button onclick="shuffleGameChars()" style="padding:4px 10px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--surface-1);color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px">↻ New set</button>
+        </div>
+      </div>
+      <div class="game-char-selector" id="gameCharSelector"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+        <input type="text" id="gameCustomChar" placeholder="Or type any character…" maxlength="1" style="padding:7px 10px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--surface-2);color:var(--text-primary);font-size:18px;width:180px;font-family:inherit;outline:none;">
+        <button onclick="applyGameChar()" style="padding:7px 14px;border-radius:var(--radius);border:0.5px solid var(--border-accent);background:var(--bg-accent);color:var(--text-accent);font-size:13px;cursor:pointer;font-family:inherit;">Set</button>
+        <button onclick="resetGame()" style="padding:7px 14px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--surface-1);color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:inherit;">Reset all</button>
+      </div>
+    </div>
+
+    <div id="gamePowerRow" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px">
+        <span id="gamePowerLabel">Power</span><span id="gamePowerPct">0%</span>
+      </div>
+      <div class="power-bar-wrap"><div class="power-bar cycling" id="powerBar"></div></div>
+    </div>
+
+    <div class="game-msg" id="gameMsg">Pick a character and start drawing to power up!</div>
+
+    <div class="game-layout">
+      <div class="game-canvas-wrap">
+        <div class="game-canvas-header">
+          <span id="gameCharLabel">Draw here</span>
+          <span id="gameStrokeCount" style="font-size:12px;color:var(--text-muted)">0 strokes</span>
+        </div>
+        <canvas id="gameCanvas" width="380" height="360" style="display:block;touch-action:none;cursor:crosshair;width:100%;height:auto;"></canvas>
+        <div class="game-controls-row">
+          <button onclick="clearGameCanvas()">Clear</button>
+          <button onclick="undoGameStroke()">Undo</button>
+          <button onclick="completeGameChar()" style="background:var(--bg-accent);color:var(--text-accent);border-color:var(--border-accent)">Complete ✓</button>
+        </div>
+      </div>
+      <div>
+        <canvas id="gameScene" width="380" height="360" class="game-scene" style="width:100%;height:auto;display:block;"></canvas>
+        <div class="game-score" id="gameScore" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+// ── Data ─────────────────────────────────────────────────────────────────────
+const H=[{c:'あ',r:'a'},{c:'い',r:'i'},{c:'う',r:'u'},{c:'え',r:'e'},{c:'お',r:'o'},{c:'か',r:'ka'},{c:'き',r:'ki'},{c:'く',r:'ku'},{c:'け',r:'ke'},{c:'こ',r:'ko'},{c:'さ',r:'sa'},{c:'し',r:'shi'},{c:'す',r:'su'},{c:'せ',r:'se'},{c:'そ',r:'so'},{c:'た',r:'ta'},{c:'ち',r:'chi'},{c:'つ',r:'tsu'},{c:'て',r:'te'},{c:'と',r:'to'},{c:'な',r:'na'},{c:'に',r:'ni'},{c:'ぬ',r:'nu'},{c:'ね',r:'ne'},{c:'の',r:'no'},{c:'は',r:'ha'},{c:'ひ',r:'hi'},{c:'ふ',r:'fu'},{c:'へ',r:'he'},{c:'ほ',r:'ho'},{c:'ま',r:'ma'},{c:'み',r:'mi'},{c:'む',r:'mu'},{c:'め',r:'me'},{c:'も',r:'mo'},{c:'や',r:'ya'},{c:'ゆ',r:'yu'},{c:'よ',r:'yo'},{c:'ら',r:'ra'},{c:'り',r:'ri'},{c:'る',r:'ru'},{c:'れ',r:'re'},{c:'ろ',r:'ro'},{c:'わ',r:'wa'},{c:'を',r:'wo'},{c:'ん',r:'n'}];
+const K=[{c:'ア',r:'a'},{c:'イ',r:'i'},{c:'ウ',r:'u'},{c:'エ',r:'e'},{c:'オ',r:'o'},{c:'カ',r:'ka'},{c:'キ',r:'ki'},{c:'ク',r:'ku'},{c:'ケ',r:'ke'},{c:'コ',r:'ko'},{c:'サ',r:'sa'},{c:'シ',r:'shi'},{c:'ス',r:'su'},{c:'セ',r:'se'},{c:'ソ',r:'so'},{c:'タ',r:'ta'},{c:'チ',r:'chi'},{c:'ツ',r:'tsu'},{c:'テ',r:'te'},{c:'ト',r:'to'},{c:'ナ',r:'na'},{c:'ニ',r:'ni'},{c:'ヌ',r:'nu'},{c:'ネ',r:'ne'},{c:'ノ',r:'no'},{c:'ハ',r:'ha'},{c:'ヒ',r:'hi'},{c:'フ',r:'fu'},{c:'ヘ',r:'he'},{c:'ホ',r:'ho'},{c:'マ',r:'ma'},{c:'ミ',r:'mi'},{c:'ム',r:'mu'},{c:'メ',r:'me'},{c:'モ',r:'mo'},{c:'ヤ',r:'ya'},{c:'ユ',r:'yu'},{c:'ヨ',r:'yo'},{c:'ラ',r:'ra'},{c:'リ',r:'ri'},{c:'ル',r:'ru'},{c:'レ',r:'re'},{c:'ロ',r:'ro'},{c:'ワ',r:'wa'},{c:'ヲ',r:'wo'},{c:'ン',r:'n'}];
+const PHRASES=[{jp:'はじめまして。',rd:'Hajimemashite.',en:"Nice to meet you.",lv:'greeting'},{jp:'よろしくお願いします。',rd:'Yoroshiku onegaishimasu.',en:"Please treat me well.",lv:'greeting'},{jp:'ありがとうございます。',rd:'Arigatō gozaimasu.',en:"Thank you very much.",lv:'essential'},{jp:'すみません。',rd:'Sumimasen.',en:"Excuse me / I'm sorry.",lv:'essential'},{jp:'わかりません。',rd:'Wakarimasen.',en:"I don't understand.",lv:'essential'},{jp:'もう一度言ってください。',rd:'Mō ichido itte kudasai.',en:"Please say that again.",lv:'learning'},{jp:'日本語を勉強しています。',rd:'Nihongo o benkyō shite imasu.',en:"I'm studying Japanese.",lv:'learning'}];
+const VOW=[{k:'あ',r:'a',t:'Like "ah" in "father"'},{k:'い',r:'i',t:'Like "ee" in "feet"'},{k:'う',r:'u',t:'Like "oo" but lips unrounded'},{k:'え',r:'e',t:'Like "e" in "bed"'},{k:'お',r:'o',t:'Like "o" in "go"'}];
+const CON=[{k:'ら り る れ ろ',t:'Tap tongue once — between r and l'},{k:'し',t:'Like "she", not "si"'},{k:'ち',t:'Like "cheese", not "ti"'},{k:'つ',t:'No English equivalent — "ts"+"u"'},{k:'ふ',t:'Soft breath — lighter than English f'}];
+const LIT=[{w:'むかしむかし',r:'mukashi mukashi',en:'Long, long ago',ex:'むかしむかし、山の中に…\nLong ago, in the mountains…'},{w:'あるところに',r:'aru tokoro ni',en:'In a certain place',ex:'あるところに村があった。\nIn a certain place there was a village.'},{w:'おじいさん',r:'ojīsan',en:'Old man / grandfather',ex:'おじいさんは山へ行きました。\nThe old man went to the mountains.'},{w:'と',r:'to',en:'And (connecting people/things)',ex:'おじいさんとおばあさん。\nThe old man and the old woman.'},{w:'おばあさん',r:'obāsan',en:'Old woman / grandmother',ex:'おばあさんは川へ洗濯に行きました。\nThe old woman went to the river to do laundry.'},{w:'が',r:'ga',en:'Subject marker (grammar particle)',ex:'ももが川を流れてきました。\nA peach came floating down the river.'},{w:'いました',r:'imashita',en:'Was / existed (past tense, living things)',ex:'昔、侍がいました。\nLong ago, there was a samurai.'}];
+const AIR=[{jp:'上手ですね！',rd:'Jōzu desu ne!',en:'Well done!'},{jp:'もう一度練習しましょう。',rd:'Mō ichido renshū shimashō.',en:"Let's practice again."},{jp:'いいですね。次は何ですか？',rd:'Ii desu ne. Tsugi wa nan desu ka?',en:"Nice! What's next?"},{jp:'発音がいいです！',rd:'Hatsuon ga ii desu!',en:'Your pronunciation is good!'},{jp:'頑張っていますね！',rd:'Ganbatte imasu ne!',en:"You're working hard!"}];
+
+// ── Nav ───────────────────────────────────────────────────────────────────────
+function switchPanel(id,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='writing')setTimeout(initSoloCanvas,50);
+  if(id==='game')setTimeout(()=>{initGameCanvas();renderGameScene();},50);
+}
+
+// ── Drawing helpers ───────────────────────────────────────────────────────────
+function drawGuide(ctx,w,h,char,show){
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle='rgba(0,0,0,0.07)';ctx.lineWidth=0.5;
+  // Always draw vertical grid lines
+  [w/4,w/2,w*3/4].forEach(x=>{ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();});
+  if(show&&char){
+    ctx.save();
+    const chars=[...char];
+    const n=Math.max(1,chars.length);
+    const cellH=h/n; // each char fills its own cell
+    const fontSize=Math.round(cellH*.72);
+    // Draw horizontal dividers between cells
+    ctx.strokeStyle='rgba(0,0,0,0.07)';ctx.lineWidth=0.5;
+    for(let i=1;i<n;i++){
+      const y=i*cellH;
+      ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+    }
+    // Ghost characters
+    ctx.globalAlpha=.09;ctx.fillStyle='#000';
+    ctx.font=fontSize+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    chars.forEach((ch,i)=>ctx.fillText(ch,w/2,i*cellH+cellH/2));
+    ctx.restore();
+  } else {
+    // Horizontal grid even without guide
+    [h/4,h/2,h*3/4].forEach(y=>{ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();});
+  }
+}
+function drawStroke(ctx,pts,color){
+  if(!pts||pts.length<2)return;
+  ctx.strokeStyle=color;ctx.lineWidth=5;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.forEach(p=>ctx.lineTo(p.x,p.y));ctx.stroke();
+}
+function getPos(canvas,e){
+  const r=canvas.getBoundingClientRect(),s=e.touches?e.touches[0]:e;
+  return{x:(s.clientX-r.left)*(canvas.width/r.width),y:(s.clientY-r.top)*(canvas.height/r.height)};
+}
+
+// ── Solo Writing ──────────────────────────────────────────────────────────────
+let selChar=H[0],soloGuide=true,soloStrokes=[],soloDraw=false,soloStroke=[];
+
+function buildSelectors(){
+  [[H,'hsel'],[K,'ksel']].forEach(([arr,id])=>{
+    const el=document.getElementById(id);
+    arr.forEach((c,i)=>{
+      const b=document.createElement('button');
+      b.className='char-btn'+(id==='hsel'&&i===0?' selected':'');
+      b.textContent=c.c;b.onclick=()=>selChar=c,document.querySelectorAll('.char-btn').forEach(x=>x.classList.remove('selected')),b.classList.add('selected'),document.getElementById('charBig').textContent=c.c,document.getElementById('charRoman').textContent=c.r,document.getElementById('charHint').textContent='Trace this character on the canvas →',clearCanvas();
+      el.appendChild(b);
+    });
+  });
+}
+
+function initSoloCanvas(){
+  const c=document.getElementById('drawCanvas');if(!c)return;
+  const ctx=c.getContext('2d');redrawSolo(ctx,c);
+  c.onmousedown=c.ontouchstart=e=>{e.preventDefault();soloDraw=true;soloStroke=[getPos(c,e)];};
+  c.onmousemove=c.ontouchmove=e=>{
+    e.preventDefault();if(!soloDraw)return;soloStroke.push(getPos(c,e));
+    redrawSolo(ctx,c);drawStroke(ctx,soloStroke,'#185fa5');
+  };
+  c.onmouseup=c.ontouchend=()=>{if(soloDraw&&soloStroke.length>1)soloStrokes.push([...soloStroke]);soloDraw=false;soloStroke=[];redrawSolo(ctx,c);};
+}
+function redrawSolo(ctx,c){if(!ctx){c=document.getElementById('drawCanvas');ctx=c.getContext('2d');}drawGuide(ctx,c.width,c.height,selChar.c,soloGuide);soloStrokes.forEach(s=>drawStroke(ctx,s,'#185fa5'));}
+function clearCanvas(){soloStrokes=[];redrawSolo();}
+function undoStroke(){soloStrokes.pop();redrawSolo();}
+function toggleGuide(){soloGuide=!soloGuide;redrawSolo();}
+
+// ── Kana table ────────────────────────────────────────────────────────────────
+function buildKanaTable(){
+  [[H,'kana-h'],[K,'kana-k']].forEach(([arr,id])=>{
+    const el=document.getElementById(id);
+    arr.forEach(h=>{
+      const d=document.createElement('div');d.className='kana-cell';
+      d.innerHTML=`<span class="k">${h.c}</span><span class="r">${h.r}</span>`;
+      if(id==='kana-h')d.onclick=()=>{document.querySelectorAll('.nav-btn')[0].click();setTimeout(()=>document.querySelectorAll('#hsel .char-btn').forEach(b=>{if(b.textContent===h.c)b.click();}),100);};
+      el.appendChild(d);
+    });
+  });
+}
+
+// ── Phrases ───────────────────────────────────────────────────────────────────
+function buildPhrases(){
+  const pp=document.getElementById('phrases-panel');
+  PHRASES.forEach(p=>{
+    const d=document.createElement('div');d.className='phrase-card';
+    d.innerHTML=`<div class="phrase-jp">${p.jp}</div><div class="phrase-rd">${p.rd}</div><div class="phrase-en">${p.en}</div><span class="phrase-label">${p.lv}</span>`;
+    d.onclick=()=>{document.getElementById('chatInput').value=p.jp;document.getElementById('chatInput').focus();};
+    pp.appendChild(d);
+  });
+}
+
+function buildVowels(){
+  const vl=document.getElementById('vowels-list');
+  VOW.forEach(v=>{const d=document.createElement('div');d.className='kana-row';d.innerHTML=`<span class="kana">${v.k}</span><span class="romaji"><strong>${v.r}</strong> — ${v.t}</span>`;vl.appendChild(d);});
+  const cl=document.getElementById('consonants-list');
+  CON.forEach(c=>{const d=document.createElement('div');d.className='kana-row';d.innerHTML=`<span class="kana" style="font-size:15px">${c.k}</span><span class="romaji">${c.t}</span>`;cl.appendChild(d);});
+}
+
+function buildLit(){
+  const lt=document.getElementById('lit-text');
+  LIT.forEach((lw,i)=>{
+    const s=document.createElement('span');s.className='word';s.textContent=lw.w;
+    s.onclick=()=>{document.getElementById('annotation').innerHTML=`<div class="ann-word">${lw.w}</div><div class="ann-reading">${lw.r}</div><div class="ann-def">${lw.en}</div><div class="ann-ex">${lw.ex}</div>`;};
+    lt.appendChild(s);
+    if(lw.w==='あるところに'||lw.w==='と')lt.appendChild(document.createTextNode('、'));
+    else if(i<LIT.length-1)lt.appendChild(document.createTextNode('\u3000'));
+  });
+  lt.appendChild(document.createTextNode('。'));
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+let mc=0;
+function sendMsg(){
+  const inp=document.getElementById('chatInput'),t=inp.value.trim();if(!t)return;
+  const msgs=document.getElementById('messages');
+  const d=document.createElement('div');d.className='msg msg-l';d.textContent=t;msgs.appendChild(d);
+  inp.value='';msgs.scrollTop=msgs.scrollHeight;
+  setTimeout(()=>{
+    const r=AIR[mc%AIR.length];mc++;
+    const rd=document.createElement('div');rd.className='msg msg-n';
+    rd.innerHTML=`<div class="msg-jp">${r.jp}</div><div class="msg-rd">${r.rd}</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px">${r.en}</div>`;
+    msgs.appendChild(rd);msgs.scrollTop=msgs.scrollHeight;
+  },800);
+}
+
+// ── Collab Kanji ──────────────────────────────────────────────────────────────
+let peer=null,conn=null;
+let myStrokes=[],theirStrokes=[];
+let mineGuide=true,tChar='',tReading='',tMeaning='',myNm='',theirNm='Partner';
+let helloSent=false;
+let collabMode='char'; // 'char' or 'phrase'
+let pickerTab='hiragana';
+let phraseTab='beginner';
+
+const PICKER={
+  hiragana:'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん'.split(''),
+  katakana:'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン'.split(''),
+  kanji:['日','月','火','水','木','金','土','山','川','田','人','口','手','足','目','耳','心','力','花','木','雨','空','海','魚','鳥','犬','猫','友','愛','夢','美','道','学','書','読','食','飲','見','聞','言','大','小','高','低','古','新','東','西','南','北']
+};
+
+const PRACTICE_PHRASES={
+  beginner:[
+    {jp:'ありがとう',rd:'Arigatou',en:'Thank you'},
+    {jp:'おはようございます',rd:'Ohayou gozaimasu',en:'Good morning'},
+    {jp:'こんにちは',rd:'Konnichiwa',en:'Hello / Good afternoon'},
+    {jp:'こんばんは',rd:'Konbanwa',en:'Good evening'},
+    {jp:'おやすみなさい',rd:'Oyasumi nasai',en:'Good night'},
+    {jp:'すみません',rd:'Sumimasen',en:'Excuse me'},
+    {jp:'はじめまして',rd:'Hajimemashite',en:'Nice to meet you'},
+    {jp:'よろしくおねがいします',rd:'Yoroshiku onegaishimasu',en:"Please treat me well"},
+  ],
+  daily:[
+    {jp:'いってきます',rd:'Ittekimasu',en:"I'm heading out"},
+    {jp:'ただいま',rd:'Tadaima',en:"I'm home"},
+    {jp:'いただきます',rd:'Itadakimasu',en:'Before eating — I humbly receive'},
+    {jp:'ごちそうさまでした',rd:'Gochisousama deshita',en:'After eating — thank you for the meal'},
+    {jp:'おつかれさまでした',rd:'Otsukaresama deshita',en:'Thank you for your hard work'},
+    {jp:'きをつけて',rd:'Ki wo tsukete',en:'Take care'},
+    {jp:'どうぞよろしく',rd:'Douzo yoroshiku',en:'Please be kind to me'},
+    {jp:'しつれいします',rd:'Shitsurei shimasu',en:'Excuse me (formal)'},
+  ],
+  polite:[
+    {jp:'おねがいします',rd:'Onegai shimasu',en:'Please (requesting)'},
+    {jp:'もうしわけございません',rd:'Moushiwake gozaimasen',en:'I am terribly sorry'},
+    {jp:'かしこまりました',rd:'Kashikomarimashita',en:'Certainly (very formal)'},
+    {jp:'おじゃまします',rd:'Ojama shimasu',en:'Pardon the intrusion'},
+    {jp:'よろしければ',rd:'Yoroshikereba',en:'If it is alright with you'},
+    {jp:'おかげさまで',rd:'Okagesamade',en:'Thanks to you (I am well)'},
+    {jp:'どうぞおかまいなく',rd:'Douzo okamainaku',en:"Please don't mind me"},
+    {jp:'たいへんおせわになりました',rd:'Taihen osewa ni narimashita',en:'Thank you very much for your help'},
+  ],
+  proverbs:[
+    {jp:'七転び八起き',rd:'Nana korobi ya oki',en:'Fall seven times, rise eight'},
+    {jp:'一期一会',rd:'Ichi-go ichi-e',en:'Once in a lifetime encounter'},
+    {jp:'花鳥風月',rd:'Kachou fuugetsu',en:'Flowers, birds, wind, moon — beauty of nature'},
+    {jp:'以心伝心',rd:'Ishin denshin',en:'Heart to heart communication'},
+    {jp:'七転八倒',rd:'Shichi ten battou',en:'Rolling around in agony'},
+    {jp:'物の哀れ',rd:'Mono no aware',en:'The pathos of things'},
+    {jp:'山川草木',rd:'Sansen soumo ku',en:'Mountains, rivers, grass, trees'},
+    {jp:'春夏秋冬',rd:'Shun ka shuu tou',en:'Spring, summer, autumn, winter'},
+  ]
+};
+
+function genRoom(){return 'jp-'+Math.random().toString(36).slice(2,8);}
+function setStatus(state,txt){
+  document.getElementById('sDot').className='sdot'+(state==='ok'?' ok':state==='wait'?' wait':'');
+  document.getElementById('sText').textContent=txt;
+}
+
+function setMode(mode){
+  collabMode=mode;
+  document.getElementById('modeCharBtn').className='mode-btn'+(mode==='char'?' active':'');
+  document.getElementById('modePhraseBtn').className='mode-btn'+(mode==='phrase'?' active':'');
+  document.getElementById('charPickerPanel').style.display=mode==='char'?'block':'none';
+  document.getElementById('phrasePickerPanel').style.display=mode==='phrase'?'block':'none';
+}
+
+function showPickerTab(tab,btn){
+  pickerTab=tab;
+  document.querySelectorAll('#charPickerPanel .ptab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildPickerGrid();
+}
+
+function buildPickerGrid(){
+  const grid=document.getElementById('pickerGrid');grid.innerHTML='';
+  PICKER[pickerTab].forEach(ch=>{
+    const b=document.createElement('button');b.className='pk-btn'+(tChar===ch?' active-char':'');
+    b.textContent=ch;
+    b.onclick=()=>applyChar(ch,'','');
+    grid.appendChild(b);
+  });
+}
+
+function applyChar(ch,rd,en){
+  tChar=ch;tReading=rd;tMeaning=en;
+  updateTargetDisplay();
+  clearMine();
+  document.querySelectorAll('.pk-btn').forEach(b=>b.classList.toggle('active-char',b.textContent===ch));
+  if(conn&&conn.open)conn.send({type:'setChar',char:ch,reading:rd,meaning:en});
+}
+
+function applyCustomChar(){
+  const v=document.getElementById('customCharInput').value.trim();
+  if(!v)return;
+  applyChar(v,'','');
+  document.getElementById('customCharInput').value='';
+}
+
+function showPhraseTab(tab,btn){
+  phraseTab=tab;
+  document.querySelectorAll('#phrasePickerPanel .ptab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildPhraseList();
+}
+
+function buildPhraseList(){
+  const el=document.getElementById('phrasePickerList');el.innerHTML='';
+  PRACTICE_PHRASES[phraseTab].forEach(p=>{
+    const d=document.createElement('div');
+    d.style.cssText='padding:10px 12px;background:var(--surface-2);border:0.5px solid var(--border);border-radius:8px;cursor:pointer;transition:all .12s;';
+    d.innerHTML=`<div style="font-size:18px">${p.jp}</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px">${p.rd}</div><div style="font-size:12px;color:var(--text-secondary)">${p.en}</div>`;
+    d.onmouseenter=()=>d.style.borderColor='var(--border-accent)';
+    d.onmouseleave=()=>d.style.borderColor='var(--border)';
+    d.onclick=()=>applyChar(p.jp,p.rd,p.en);
+    el.appendChild(d);
+  });
+}
+
+function applyCustomPhrase(){
+  const v=document.getElementById('customPhraseInput').value.trim();
+  if(!v)return;
+  applyChar(v,'','');
+  document.getElementById('customPhraseInput').value='';
+}
+
+// Resize both collab canvases so each character gets a generous fixed cell
+const CELL_H = 120; // px per character at canvas internal resolution
+const MIN_CANVAS_H = 360;
+const MAX_CANVAS_H = 1400;
+const CANVAS_W = 420;
+
+function resizeCollabCanvases(){
+  const chars = [...tChar]; // correctly splits multi-byte chars
+  const n = Math.max(1, chars.length);
+  const h = Math.min(MAX_CANVAS_H, Math.max(MIN_CANVAS_H, n * CELL_H));
+  ['myCanvas','partnerCanvas'].forEach(id=>{
+    const c = document.getElementById(id);
+    if(!c) return;
+    c.width = CANVAS_W;
+    c.height = h;
+    // CSS height: keep visual width fixed, scale height proportionally
+    c.style.width = '100%';
+    c.style.height = 'auto';
+  });
+}
+
+function updateTargetDisplay(){
+  const d=document.getElementById('tDisplay');
+  if(tChar){
+    d.style.display='flex';
+    document.getElementById('tBig').textContent=tChar;
+    document.getElementById('tLabel').textContent=tReading||tChar;
+    document.getElementById('tSub').textContent=tMeaning||(tChar.length>1?'Trace each character — ghost guides are stacked vertically':'Trace using the ghost guide underneath');
+  } else {
+    d.style.display='none';
+  }
+  resizeCollabCanvases();
+  redrawMine();redrawTheirs();
+}
+
+function startSession(){
+  myNm=document.getElementById('myName').value.trim()||'You';
+  tChar=document.getElementById('kanjiTarget').value.trim();
+  tReading='';tMeaning='';
+  let room=document.getElementById('roomIn').value.trim();
+  const host=!room;
+  if(!room)room=genRoom();
+
+  document.getElementById('cSetup').style.display='none';
+  document.getElementById('cActive').style.display='block';
+  document.getElementById('myNameLabel').textContent=myNm+' (you)';
+  document.getElementById('roomDisplay').textContent=room;
+
+  updateTargetDisplay();
+  buildPickerGrid();
+  buildPhraseList();
+
+  setStatus('wait','Connecting…');
+  myStrokes=[];theirStrokes=[];helloSent=false;
+  initCollabCanvases();
+
+  const myId=room+(host?'-A':'-B');
+  const theirId=room+(host?'-B':'-A');
+
+  function tryConnect(myPeerId,theirPeerId,asHost){
+    peer=new Peer(myPeerId,{debug:0});
+    peer.on('open',()=>{
+      if(asHost){
+        setStatus('wait','Waiting for partner — share the room code above');
+        peer.on('connection',c=>{conn=c;wireConn();});
+      } else {
+        setStatus('wait','Joining room…');
+        conn=peer.connect(theirPeerId,{reliable:true});
+        wireConn();
+      }
+    });
+    peer.on('error',err=>{
+      if(err.type==='unavailable-id'){
+        peer.destroy();
+        tryConnect(theirId,myId,false);
+      } else {
+        setStatus('','Error: '+err.type+'. Try refreshing.');
+      }
+    });
+  }
+  tryConnect(myId,theirId,host);
+}
+
+function wireConn(){
+  conn.on('open',()=>{
+    setStatus('ok','Connected with '+theirNm);
+    if(!helloSent){helloSent=true;conn.send({type:'hello',name:myNm,char:tChar,reading:tReading,meaning:tMeaning});}
+  });
+  conn.on('data',data=>{
+    if(data.type==='hello'){
+      theirNm=data.name||'Partner';
+      document.getElementById('partnerLabel').textContent=theirNm;
+      setStatus('ok','Connected with '+theirNm);
+      if(!tChar&&data.char){tChar=data.char;tReading=data.reading||'';tMeaning=data.meaning||'';updateTargetDisplay();}
+      if(!helloSent){helloSent=true;conn.send({type:'hello',name:myNm,char:tChar,reading:tReading,meaning:tMeaning});}
+    } else if(data.type==='setChar'){
+      tChar=data.char;tReading=data.reading||'';tMeaning=data.meaning||'';
+      updateTargetDisplay();clearMine();
+      document.querySelectorAll('.pk-btn').forEach(b=>b.classList.toggle('active-char',b.textContent===tChar));
+    } else if(data.type==='stroke'){
+      theirStrokes.push(data.pts);redrawTheirs();
+    } else if(data.type==='point'){
+      if(!theirStrokes._live)theirStrokes._live=[];
+      if(data.end){theirStrokes.push(theirStrokes._live);theirStrokes._live=null;}
+      else{if(data.start)theirStrokes._live=[data.p];else if(theirStrokes._live)theirStrokes._live.push(data.p);}
+      redrawTheirs();
+    } else if(data.type==='clear'){
+      theirStrokes=[];redrawTheirs();
+    } else if(data.type==='undo'){
+      theirStrokes.pop();redrawTheirs();
+    }
+  });
+  conn.on('close',()=>setStatus('','Partner disconnected.'));
+  conn.on('error',()=>setStatus('','Connection lost.'));
+}
+
+function initCollabCanvases(){
+  resizeCollabCanvases();
+  const mc=document.getElementById('myCanvas');
+  const ctx=mc.getContext('2d');
+  redrawMine();redrawTheirs();
+  let dg=false,cs=[];
+  mc.onmousedown=mc.ontouchstart=e=>{
+    e.preventDefault();dg=true;cs=[getPos(mc,e)];
+    if(conn&&conn.open)conn.send({type:'point',start:true,p:cs[0]});
+  };
+  mc.onmousemove=mc.ontouchmove=e=>{
+    e.preventDefault();if(!dg)return;const p=getPos(mc,e);cs.push(p);
+    drawGuide(ctx,mc.width,mc.height,tChar,mineGuide);
+    myStrokes.forEach(s=>drawStroke(ctx,s,'#185fa5'));
+    drawStroke(ctx,cs,'#185fa5');
+    if(conn&&conn.open)conn.send({type:'point',p});
+  };
+  mc.onmouseup=mc.ontouchend=()=>{
+    if(dg&&cs.length>1){
+      myStrokes.push([...cs]);redrawMine();
+      if(conn&&conn.open){conn.send({type:'stroke',pts:[...cs]});conn.send({type:'point',end:true});}
+    }
+    dg=false;cs=[];
+  };
+}
+
+function redrawMine(){
+  const c=document.getElementById('myCanvas');if(!c)return;
+  const ctx=c.getContext('2d');
+  drawGuide(ctx,c.width,c.height,tChar,mineGuide);
+  myStrokes.forEach(s=>drawStroke(ctx,s,'#185fa5'));
+}
+function redrawTheirs(){
+  const c=document.getElementById('partnerCanvas');if(!c)return;
+  const ctx=c.getContext('2d');
+  drawGuide(ctx,c.width,c.height,tChar,true);
+  theirStrokes.forEach(s=>Array.isArray(s)&&drawStroke(ctx,s,'#7F77DD'));
+  if(theirStrokes._live)drawStroke(ctx,theirStrokes._live,'#7F77DD');
+}
+
+function clearMine(){myStrokes=[];redrawMine();if(conn&&conn.open)conn.send({type:'clear'});}
+function undoMine(){myStrokes.pop();redrawMine();if(conn&&conn.open)conn.send({type:'undo'});}
+function toggleMineGuide(){mineGuide=!mineGuide;redrawMine();}
+
+function copyRoom(){
+  const txt=document.getElementById('roomDisplay').textContent;
+  navigator.clipboard.writeText(txt).catch(()=>{});
+  const el=document.getElementById('roomDisplay');el.textContent='Copied!';setTimeout(()=>el.textContent=txt,1400);
+}
+
+function endSession(){
+  if(conn)conn.close();if(peer)peer.destroy();
+  peer=null;conn=null;myStrokes=[];theirStrokes=[];helloSent=false;
+  document.getElementById('cSetup').style.display='block';
+  document.getElementById('cActive').style.display='none';
+  document.getElementById('tDisplay').style.display='none';
+  ['myName','roomIn','kanjiTarget'].forEach(id=>document.getElementById(id).value='');
+}
+
+// ── Game Mode ──────────────────────────────────────────────────────────────────
+let sport='cycling';
+let gameChar='山';
+let gameStrokes=[];
+let gameDrawing=false;
+let gameCurStroke=[];
+let gameScore=0;
+let gameAnimFrame=null;
+let gameSceneState={};
+
+// Cycling persistent state — survives character changes
+const cycling = {
+  distance: 0,      // 0–1 within the current level
+  level: 1,
+  levelComplete: false,
+  celebrateFrames: 0,
+  totalCharsDrawn: 0,
+  strokesThisChar: 0,
+};
+
+// Level definitions: hilliness (0–1), length label, bg colour
+const LEVELS = [
+  {name:'Stage 1',label:'Gentle valley climb',hilliness:.18,sky:'#b8d8f0',grass:'#5a8a3c',dist:1},
+  {name:'Stage 2',label:'Rolling countryside',hilliness:.28,sky:'#a8ccec',grass:'#4a7a2c',dist:1},
+  {name:'Stage 3',label:'Mountain foothills',hilliness:.38,sky:'#96b8d8',grass:'#3a6a1c',dist:1},
+  {name:'Stage 4',label:'Col de la Madeleine',hilliness:.50,sky:'#7898c0',grass:'#2a5a0c',dist:1},
+  {name:'Stage 5',label:'Alpe d\'Huez',hilliness:.62,sky:'#5880a8',grass:'#1a4a04',dist:1},
+];
+
+// Stroke length → distance gain (longer stroke = more advance, capped)
+function strokeToDistance(pts){
+  let len=0;
+  for(let i=1;i<pts.length;i++){
+    const dx=pts[i].x-pts[i-1].x,dy=pts[i].y-pts[i-1].y;
+    len+=Math.sqrt(dx*dx+dy*dy);
+  }
+  const lvl=LEVELS[Math.min(cycling.level-1,LEVELS.length-1)];
+  // Longer courses on higher levels require more ink
+  const divisor=3800+cycling.level*600;
+  return Math.min(0.06, len/divisor);
+}
+
+const GAME_CHARS_POOL = [
+  // Nature & elements
+  '山','川','日','月','水','火','木','金','土','空','海','花','雨','風','雪','石','草','森',
+  // People & body
+  '人','口','手','足','目','耳','心','力','女','男','子','父','母','友',
+  // Common verbs / concepts
+  '食','飲','見','聞','言','書','読','学','行','来','出','入','上','下',
+  // Hiragana (good for beginners)
+  'あ','い','う','え','お','か','き','く','け','こ','さ','し','す','せ','そ',
+  'た','ち','つ','て','と','な','に','ぬ','ね','の','は','ひ','ふ','へ','ほ',
+  'ま','み','む','め','も','や','ゆ','よ','ら','り','る','れ','ろ','わ','を','ん',
+];
+const GAME_CHARS_PER_PAGE = 15;
+let gameCharPage = []; // current visible set
+let usedGameChars = new Set(); // chars user has practiced this session
+
+function shuffleGameChars(){
+  // Pick a fresh random set from the pool, avoiding recently used if possible
+  const pool = GAME_CHARS_POOL.filter(c => !usedGameChars.has(c));
+  const source = pool.length >= GAME_CHARS_PER_PAGE ? pool : GAME_CHARS_POOL;
+  const shuffled = [...source].sort(() => Math.random() - 0.5);
+  gameCharPage = shuffled.slice(0, GAME_CHARS_PER_PAGE);
+  buildGameCharSelector();
+}
+
+function buildGameCharSelector(){
+  const el = document.getElementById('gameCharSelector'); el.innerHTML = '';
+  gameCharPage.forEach(ch => {
+    const used = usedGameChars.has(ch);
+    const b = document.createElement('button');
+    b.className = 'char-btn' + (ch === gameChar ? ' selected' : '');
+    b.textContent = ch;
+    b.style.cssText = 'font-size:18px;position:relative;' + (used ? 'opacity:0.45;' : '');
+    b.title = used ? ch + ' — practiced' : ch;
+    b.onclick = () => {
+      gameChar = ch;
+      document.querySelectorAll('#gameCharSelector .char-btn').forEach(x => x.classList.remove('selected'));
+      b.classList.add('selected');
+      resetGameChar();
+    };
+    el.appendChild(b);
+  });
+  // If all chars in this page are used, auto-shuffle
+  const allUsed = gameCharPage.every(c => usedGameChars.has(c));
+  const countEl = document.getElementById('gameCharCount');
+  if(countEl) countEl.textContent = usedGameChars.size > 0
+    ? usedGameChars.size + ' practiced this session' : '';
+  if(allUsed && gameCharPage.length > 0){
+    setTimeout(() => {
+      setGameMsg('🎉 All characters in this set practiced! Loading a new set…');
+      setTimeout(shuffleGameChars, 1200);
+    }, 400);
+  }
+}
+
+function setSport(s,btn){
+  sport=s;
+  document.querySelectorAll('.sport-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('powerBar').className='power-bar '+s;
+  if(s==='cycling'){
+    // keep cycling progress, just re-render
+    updateCyclingUI();
+  } else {
+    resetNonCyclingGame();
+  }
+  renderGameScene();
+}
+
+// Switch to a new character but preserve cycling progress
+function resetGameChar(){
+  gameStrokes=[];gameCurStroke=[];cycling.strokesThisChar=0;
+  document.getElementById('gameStrokeCount').textContent='0 strokes';
+  document.getElementById('gameCharLabel').textContent=gameChar;
+  // Mark previous char as practiced when switching away
+  usedGameChars.add(gameChar);
+  cycling.totalCharsDrawn = usedGameChars.size;
+  buildGameCharSelector(); // refresh opacity states + count
+  updateCyclingUI();
+  redrawGameCanvas();
+  setGameMsg('🚴 Drawing ' + gameChar + ' — every stroke pedals you further!');
+}
+
+// Full reset — clears cycling distance and all session tracking
+function resetGame(){
+  gameStrokes=[];gameCurStroke=[];gameScore=0;
+  cycling.distance=0;cycling.level=1;cycling.levelComplete=false;
+  cycling.celebrateFrames=0;cycling.totalCharsDrawn=0;cycling.strokesThisChar=0;
+  usedGameChars.clear();
+  document.getElementById('gameStrokeCount').textContent='0 strokes';
+  document.getElementById('gameCharLabel').textContent=gameChar;
+  document.getElementById('gameScore').textContent='';
+  gameSceneState=initSceneState();
+  if(gameAnimFrame)cancelAnimationFrame(gameAnimFrame);
+  shuffleGameChars();
+  updateCyclingUI();
+  redrawGameCanvas();
+  renderGameScene();
+  setGameMsg('🚴 Draw any character — each stroke pedals you up the hill. Finish a character for a bonus burst!');
+}
+
+function resetNonCyclingGame(){
+  gameStrokes=[];gameCurStroke=[];gameScore=0;
+  document.getElementById('gameStrokeCount').textContent='0 strokes';
+  document.getElementById('gameCharLabel').textContent=gameChar;
+  document.getElementById('gameScore').textContent='';
+  gameSceneState=initSceneState();
+  if(gameAnimFrame)cancelAnimationFrame(gameAnimFrame);
+  redrawGameCanvas();
+}
+
+function updateCyclingUI(){
+  const lvl=LEVELS[Math.min(cycling.level-1,LEVELS.length-1)];
+  const pct=Math.round(cycling.distance*100);
+  document.getElementById('powerBar').style.width=pct+'%';
+  document.getElementById('gamePowerPct').textContent=pct+'%';
+  document.getElementById('gamePowerLabel').textContent=lvl.name+' — '+lvl.label;
+  document.getElementById('gameScore').textContent=cycling.totalCharsDrawn>0
+    ? '✍️ '+cycling.totalCharsDrawn+' characters drawn  •  Lv '+cycling.level : '';
+}
+
+function initSceneState(){
+  if(sport==='cycling') return {celebrate:0};
+  if(sport==='tennis') return {wonPoint:false,celebrate:0};
+  if(sport==='surfing') return {celebrate:0};
+  return {};
+}
+
+function redrawGameCanvas(){
+  const c=document.getElementById('gameCanvas');if(!c)return;
+  const ctx=c.getContext('2d');
+  drawGuide(ctx,c.width,c.height,gameChar,true);
+  gameStrokes.forEach(s=>drawStroke(ctx,s,'#185fa5'));
+}
+
+function clearGameCanvas(){
+  gameStrokes=[];gameCurStroke=[];
+  cycling.strokesThisChar=0;
+  redrawGameCanvas();
+  document.getElementById('gameStrokeCount').textContent='0 strokes';
+}
+function undoGameStroke(){
+  if(!gameStrokes.length)return;
+  gameStrokes.pop();cycling.strokesThisChar=Math.max(0,cycling.strokesThisChar-1);
+  document.getElementById('gameStrokeCount').textContent=gameStrokes.length+' stroke'+(gameStrokes.length!==1?'s':'');
+  redrawGameCanvas();
+}
+
+function completeGameChar(){
+  usedGameChars.add(gameChar);
+  cycling.totalCharsDrawn = usedGameChars.size;
+  const bonus=Math.round(cycling.strokesThisChar*4);
+  gameScore+=50+bonus;
+  if(sport==='cycling'){
+    addCyclingDistance(0.08+cycling.strokesThisChar*0.012);
+    setGameMsg('✅ '+ gameChar +' complete! +'+(50+bonus)+' pts — pick another to keep climbing.');
+  } else {
+    gameSceneState.wonPoint=true;gameSceneState.celebrate=60;
+    setGameMsg(sport==='tennis'?'🎾 Point won! +'+(50+bonus)+' pts':'🤙 Perfect ride! +'+(50+bonus)+' pts');
+    animateScene();
+  }
+  updateCyclingUI();
+  buildGameCharSelector(); // refresh faded states + count
+  // Reset canvas for next attempt
+  gameStrokes=[];gameCurStroke=[];cycling.strokesThisChar=0;
+  document.getElementById('gameStrokeCount').textContent='0 strokes';
+  redrawGameCanvas();
+}
+
+function addCyclingDistance(d){
+  cycling.distance=Math.min(1,cycling.distance+d);
+  updateCyclingUI();
+  if(cycling.distance>=1){
+    // Level complete!
+    cycling.levelComplete=true;
+    cycling.celebrateFrames=120;
+    setTimeout(()=>{
+      cycling.level=Math.min(LEVELS.length,cycling.level+1);
+      cycling.distance=0;
+      cycling.levelComplete=false;
+      const lvl=LEVELS[Math.min(cycling.level-1,LEVELS.length-1)];
+      setGameMsg('🏔️ Level '+cycling.level+' unlocked: '+lvl.label+'! Keep drawing to climb!');
+      updateCyclingUI();
+      animateScene();
+    },2200);
+    const lvl=LEVELS[Math.min(cycling.level-1,LEVELS.length-1)];
+    setGameMsg('🏆 '+lvl.name+' conquered! Unlocking next stage…');
+  }
+  animateScene();
+}
+
+function setGameMsg(msg){document.getElementById('gameMsg').textContent=msg;}
+
+
+function initGameCanvas(){
+  const c=document.getElementById('gameCanvas');if(!c)return;
+  redrawGameCanvas();
+  c.onmousedown=c.ontouchstart=e=>{
+    e.preventDefault();
+    gameDrawing=true;gameCurStroke=[getPos(c,e)];
+  };
+  c.onmousemove=c.ontouchmove=e=>{
+    e.preventDefault();
+    if(!gameDrawing)return;
+    gameCurStroke.push(getPos(c,e));
+    redrawGameCanvas();
+    drawStroke(c.getContext('2d'),gameCurStroke,'#185fa5');
+  };
+  c.onmouseup=c.ontouchend=()=>{
+    if(!gameDrawing)return;
+    if(gameCurStroke.length>3){
+      gameStrokes.push([...gameCurStroke]);
+      cycling.strokesThisChar++;
+      document.getElementById('gameStrokeCount').textContent=gameStrokes.length+' stroke'+(gameStrokes.length!==1?'s':'');
+      if(sport==='cycling'){
+        const dist=strokeToDistance(gameCurStroke);
+        addCyclingDistance(dist);
+        const msgs=['Keep pedaling!','Looking strong!','Pushing up!','Dig deep!','Great form!','Power through!'];
+        setGameMsg(msgs[Math.floor(Math.random()*msgs.length)]);
+      } else {
+        const msgs={
+          tennis:['Good swing!','Nice form!','Keep rallying!','Power shot!','Topspin!'],
+          surfing:['Ride it!','Feel the wave!','Carve!','Stay low!','Shred it!']
+        };
+        const m=msgs[sport]||[];setGameMsg(m[Math.floor(Math.random()*m.length)]||'');
+        const inc=Math.min(18,6+gameCurStroke.length*0.04);
+        // For tennis/surfing keep old power bar behaviour
+        const pb=document.getElementById('powerBar');
+        const cur=parseFloat(pb.style.width||'0');
+        const next=Math.min(100,cur+inc);
+        pb.style.width=next+'%';
+        document.getElementById('gamePowerPct').textContent=Math.round(next)+'%';
+        animateScene();
+      }
+    }
+    gameDrawing=false;gameCurStroke=[];
+    redrawGameCanvas();
+  };
+}
+
+// ── Scene rendering ────────────────────────────────────────────────────────────
+function animateScene(){
+  if(gameAnimFrame)cancelAnimationFrame(gameAnimFrame);
+  const isCycling=sport==='cycling';
+  let frames=0;
+  const maxFrames=isCycling?180:90;
+  function loop(){
+    renderGameScene();
+    frames++;
+    if(frames<maxFrames)gameAnimFrame=requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+function renderGameScene(){
+  const c=document.getElementById('gameScene');if(!c)return;
+  const ctx=c.getContext('2d');
+  const w=c.width,h=c.height;
+  if(sport==='cycling')renderCycling(ctx,w,h);
+  else if(sport==='tennis')renderTennis(ctx,w,h);
+  else renderSurfing(ctx,w,h);
+}
+
+function renderCycling(ctx,w,h){
+  const lvlIdx=Math.min(cycling.level-1,LEVELS.length-1);
+  const lvl=LEVELS[lvlIdx];
+  const progress=cycling.distance; // 0–1 within this level
+  const hilliness=lvl.hilliness;
+
+  // Sky — gets darker/more dramatic at higher levels
+  const skyLight=Math.max(80,180-lvlIdx*20);
+  ctx.fillStyle=`hsl(210,55%,${skyLight*0.47}%)`;ctx.fillRect(0,0,w,h);
+
+  // Sun or overcast depending on level
+  if(lvlIdx<3){
+    ctx.fillStyle=`rgba(255,240,100,${0.8-lvlIdx*.1})`;
+    ctx.beginPath();ctx.arc(w*.82,h*.1,18-lvlIdx*2,0,Math.PI*2);ctx.fill();
+  } else {
+    // High altitude clouds cover the sun
+    ctx.fillStyle='rgba(200,210,220,0.6)';ctx.fillRect(0,0,w,h*.3);
+  }
+
+  // Background mountains — more peaks at higher levels
+  ctx.fillStyle=`hsl(210,30%,${42-lvlIdx*4}%)`;
+  ctx.beginPath();ctx.moveTo(0,h*.55);
+  const peaks=3+lvlIdx;
+  for(let i=0;i<=peaks;i++){
+    const px=(i/peaks)*w;
+    const py=h*(.55-hilliness*(0.5+Math.sin(i*1.7)*0.5));
+    ctx.lineTo(px,py);
+  }
+  ctx.lineTo(w,h*.55);ctx.closePath();ctx.fill();
+
+  // Snow caps on high levels
+  if(lvlIdx>=3){
+    ctx.fillStyle='rgba(255,255,255,0.85)';
+    ctx.beginPath();ctx.moveTo(0,h*.55);
+    for(let i=0;i<=peaks;i++){
+      const px=(i/peaks)*w;
+      const peakY=h*(.55-hilliness*(0.5+Math.sin(i*1.7)*0.5));
+      ctx.lineTo(px,peakY+8);
+      ctx.lineTo(px+(w/peaks)*.2,peakY+18);
+    }
+    ctx.lineTo(w,h*.55);ctx.closePath();ctx.fill();
+  }
+
+  // The course — a road that winds based on level
+  // We draw the REMAINING road ahead from rider's current position
+  const riderScreenX=w*.22; // rider stays left-of-center; world scrolls
+  // Road curves up more steeply at higher levels
+  const baseY=h*.78;
+  const summitY=h*(.35-hilliness*.25);
+  // Intermediate switchbacks on harder levels
+  ctx.fillStyle=`hsl(120,${35-lvlIdx*3}%,${32-lvlIdx*3}%)`;
+  ctx.beginPath();ctx.moveTo(0,h);
+  if(lvlIdx<2){
+    // Simple hill
+    ctx.quadraticCurveTo(w*.5,summitY,w,summitY+h*.1);
+  } else {
+    // Switchbacks
+    ctx.bezierCurveTo(w*.25,baseY-20,w*.4,summitY+30,w*.55,summitY+60);
+    ctx.bezierCurveTo(w*.7,summitY+90,w*.85,summitY+20,w,summitY);
+  }
+  ctx.lineTo(w,h);ctx.closePath();ctx.fill();
+
+  // Road surface
+  ctx.strokeStyle='#8B7355';ctx.lineWidth=8;ctx.setLineDash([]);
+  ctx.beginPath();
+  if(lvlIdx<2){
+    ctx.moveTo(0,baseY);ctx.quadraticCurveTo(w*.5,summitY+6,w,summitY+h*.1+6);
+  } else {
+    ctx.moveTo(0,baseY);
+    ctx.bezierCurveTo(w*.25,baseY-14,w*.4,summitY+36,w*.55,summitY+66);
+    ctx.bezierCurveTo(w*.7,summitY+96,w*.85,summitY+26,w,summitY+6);
+  }
+  ctx.stroke();
+  // Road centre dashes
+  ctx.strokeStyle='#d4b86a';ctx.lineWidth=2;ctx.setLineDash([14,12]);
+  ctx.beginPath();
+  if(lvlIdx<2){
+    ctx.moveTo(0,baseY);ctx.quadraticCurveTo(w*.5,summitY+6,w,summitY+h*.1+6);
+  } else {
+    ctx.moveTo(0,baseY);
+    ctx.bezierCurveTo(w*.25,baseY-14,w*.4,summitY+36,w*.55,summitY+66);
+    ctx.bezierCurveTo(w*.7,summitY+96,w*.85,summitY+26,w,summitY+6);
+  }
+  ctx.stroke();ctx.setLineDash([]);
+
+  // Distance markers along road
+  for(let m=0;m<=4;m++){
+    const mt=m/4;
+    let mx,my;
+    if(lvlIdx<2){
+      mx=w*mt;my=baseY+(summitY+h*.1-baseY)*mt;
+    } else {
+      // approximate bezier
+      mx=w*mt;my=baseY+(summitY-baseY)*mt;
+    }
+    if(m>0){
+      ctx.fillStyle='rgba(255,255,255,0.7)';ctx.beginPath();ctx.arc(mx,my,4,0,Math.PI*2);ctx.fill();
+      if(mt>progress-0.1){
+        ctx.fillStyle='rgba(0,0,0,0.5)';ctx.font='10px sans-serif';ctx.textAlign='center';
+        ctx.fillText((m*25)+'%',mx,my-10);
+      }
+    }
+  }
+  ctx.textAlign='left';
+
+  // Summit flag (at the end of road)
+  const flagX=lvlIdx<2?w*.96:w*.96,flagY=lvlIdx<2?summitY+h*.1-4:summitY-2;
+  ctx.strokeStyle='#555';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(flagX,flagY-38);ctx.lineTo(flagX,flagY+8);ctx.stroke();
+  ctx.fillStyle=cycling.levelComplete?'#f9d423':'#e24b4a';
+  ctx.beginPath();ctx.moveTo(flagX,flagY-38);ctx.lineTo(flagX+18,flagY-26);ctx.lineTo(flagX,flagY-14);ctx.closePath();ctx.fill();
+
+  // Rider position — moves along the road with progress
+  let rx,ry;
+  const t=progress;
+  if(lvlIdx<2){
+    rx=w*(t*.92+.03);
+    ry=baseY+(summitY+h*.1-baseY)*t;
+  } else {
+    // follow bezier approximately
+    rx=w*(t*.92+.03);
+    ry=baseY+(summitY+20-baseY)*t+Math.sin(t*Math.PI*2)*h*.05;
+  }
+  // Slope angle for tilting rider
+  const tilt=lvlIdx<2 ? -(hilliness*0.7) : -(hilliness*0.5+Math.sin(t*Math.PI*2)*0.15);
+
+  const bob=Math.sin(Date.now()*.012)*1.8*(progress>0?1:0);
+  ctx.save();ctx.translate(rx,ry+bob);ctx.rotate(tilt);
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.12)';ctx.beginPath();ctx.ellipse(0,14,20,4,0,0,Math.PI*2);ctx.fill();
+  // Wheels
+  [[-14,10],[14,10]].forEach(([dx,dy])=>{
+    ctx.fillStyle='#222';ctx.beginPath();ctx.arc(dx,dy,9,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#999';ctx.beginPath();ctx.arc(dx,dy,5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#222';ctx.beginPath();ctx.arc(dx,dy,2,0,Math.PI*2);ctx.fill();
+  });
+  // Frame
+  ctx.strokeStyle=lvlIdx<2?'#c0392b':lvlIdx<4?'#8B0000':'#000';
+  ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(-14,10);ctx.lineTo(0,-2);ctx.lineTo(14,10);ctx.moveTo(0,-2);ctx.lineTo(2,-14);ctx.moveTo(-14,10);ctx.lineTo(2,-14);ctx.stroke();
+  // Handlebars
+  ctx.strokeStyle='#555';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,-14);ctx.lineTo(8,-12);ctx.stroke();
+  // Body (leaning forward more at higher levels)
+  const leanAngle=-0.2-lvlIdx*0.05;
+  ctx.fillStyle='#2980b9';ctx.beginPath();ctx.ellipse(2,-20,7,11,leanAngle,0,Math.PI*2);ctx.fill();
+  // Arms on bars
+  ctx.strokeStyle='#2980b9';ctx.lineWidth=3;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(2,-14);ctx.lineTo(8,-12);ctx.stroke();
+  // Head
+  ctx.fillStyle='#f5cba7';ctx.beginPath();ctx.arc(5,-31+bob,6,0,Math.PI*2);ctx.fill();
+  // Helmet — colour varies by level
+  const helmetColors=['#e74c3c','#e74c3c','#f39c12','#8B0000','#000'];
+  ctx.fillStyle=helmetColors[lvlIdx];ctx.beginPath();ctx.arc(5,-35,6,Math.PI+.3,-.3);ctx.fill();
+  // Level-complete celebration
+  if(cycling.levelComplete){
+    ctx.globalAlpha=Math.min(1,cycling.celebrateFrames/40);
+    ctx.font='18px serif';
+    ['⭐','🏆','✨'].forEach((e,i)=>ctx.fillText(e,-22+i*22,-52+Math.sin(Date.now()*.025+i)*6));
+    ctx.globalAlpha=1;
+  }
+  ctx.restore();
+
+  // HUD — level info
+  ctx.fillStyle='rgba(0,0,0,0.42)';ctx.beginPath();
+  if(ctx.roundRect)ctx.roundRect(8,8,w-16,34,6);else ctx.rect(8,8,w-16,34);
+  ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.textAlign='left';
+  ctx.fillText('🚴 '+lvl.name+' — '+lvl.label,14,22);
+  ctx.fillStyle='rgba(255,255,255,0.7)';ctx.font='11px sans-serif';
+  ctx.fillText('Progress: '+Math.round(progress*100)+'%   Characters drawn: '+cycling.totalCharsDrawn,14,36);
+  // Progress bar in HUD
+  ctx.fillStyle='rgba(255,255,255,0.2)';ctx.fillRect(8,44,w-16,6);
+  ctx.fillStyle='#5DCAA5';ctx.fillRect(8,44,(w-16)*progress,6);
+  ctx.textAlign='left';
+
+  // Clouds
+  [[.1,.14],[.45,.09],[.72,.17]].forEach(([cx,cy],i)=>{
+    const ox=((Date.now()*.00025*(1+i*.4))+i*.3)%1.3-.15;
+    drawCloud(ctx,(cx+ox)*w,cy*h,26+i*10);
+  });
+  if(cycling.celebrateFrames>0)cycling.celebrateFrames--;
+}
+
+function drawCloud(ctx,x,y,r){
+  ctx.fillStyle='rgba(255,255,255,0.85)';
+  [[0,0],[r*.7,r*.1],[r*-.5,r*.15],[r*.4,r*.25],[r*-.3,r*.25]].forEach(([dx,dy])=>{ctx.beginPath();ctx.arc(x+dx,y+dy,r*.5,0,Math.PI*2);ctx.fill();});
+}
+
+function renderTennis(ctx,w,h){
+  const s=gameSceneState;
+  const pwr=gamePower/100;
+  // Court
+  ctx.fillStyle='#4a9c3f';ctx.fillRect(0,0,w,h);
+  // Court lines
+  ctx.strokeStyle='rgba(255,255,255,0.85)';ctx.lineWidth=2;
+  // Baselines
+  ctx.strokeRect(w*.08,h*.1,w*.84,h*.8);
+  // Net
+  ctx.lineWidth=3;ctx.strokeStyle='#fff';
+  ctx.beginPath();ctx.moveTo(w*.08,h*.5);ctx.lineTo(w*.92,h*.5);ctx.stroke();
+  ctx.lineWidth=1;ctx.strokeStyle='rgba(255,255,255,0.4)';
+  for(let i=0;i<12;i++){const nx=w*.08+i*(w*.84/12);ctx.beginPath();ctx.moveTo(nx,h*.5);ctx.lineTo(nx,h*.5+h*.04);ctx.stroke();}
+  // Service boxes
+  ctx.lineWidth=1.5;ctx.strokeStyle='rgba(255,255,255,0.7)';
+  ctx.beginPath();ctx.moveTo(w*.5,h*.1);ctx.lineTo(w*.5,h*.5);ctx.moveTo(w*.08,h*.3);ctx.lineTo(w*.92,h*.3);ctx.stroke();
+  // Player (bottom)
+  const playerX=w*.5+Math.sin(Date.now()*.004)*w*.05*pwr;
+  drawTennisPlayer(ctx,playerX,h*.82,'#2980b9',true,pwr>0);
+  // Opponent (top)
+  const oppX=w*.5+Math.sin(Date.now()*.003+1)*w*.04*(1-pwr*.5);
+  drawTennisPlayer(ctx,oppX,h*.18,'#e74c3c',false,false);
+  // Ball
+  const ballProgress=pwr;
+  const ballX=w*.5+(oppX-playerX)*(1-ballProgress)+( playerX-w*.5);
+  const ballY=h*.82-(h*.64)*ballProgress+Math.abs(Math.sin(ballProgress*Math.PI))*h*.12;
+  const ballScale=1+Math.abs(Math.sin(ballProgress*Math.PI))*.3;
+  ctx.save();ctx.translate(ballX,ballY);ctx.scale(ballScale,ballScale);
+  ctx.fillStyle='#d4ed26';ctx.beginPath();ctx.arc(0,0,7,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,7,.3,Math.PI-.3);ctx.stroke();
+  ctx.restore();
+  // Score
+  if(s.wonPoint){
+    ctx.fillStyle='rgba(0,0,0,0.45)';ctx.fillRect(w*.25,h*.38,w*.5,h*.14);
+    ctx.fillStyle='#fff';ctx.font='bold 20px sans-serif';ctx.textAlign='center';
+    ctx.fillText('POINT! 🎾',w*.5,h*.47);
+    ctx.font='13px sans-serif';ctx.fillText('Score: '+gameScore,w*.5,h*.5+2);
+  }
+  ctx.textAlign='left';
+}
+
+function drawTennisPlayer(ctx,x,y,color,isBottom,swinging){
+  ctx.save();ctx.translate(x,y);
+  if(!isBottom)ctx.scale(1,-1);
+  // Body
+  ctx.fillStyle=color;ctx.fillRect(-8,-22,16,20);
+  // Head
+  ctx.fillStyle='#f5cba7';ctx.beginPath();ctx.arc(0,-28,8,0,Math.PI*2);ctx.fill();
+  // Racket
+  const ra=swinging?-.6:-.2;
+  ctx.save();ctx.rotate(ra);
+  ctx.strokeStyle='#888';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(10,-10);ctx.lineTo(22,-22);ctx.stroke();
+  ctx.strokeStyle=color;ctx.lineWidth=3;ctx.beginPath();ctx.arc(24,-24,7,0,Math.PI*2);ctx.stroke();
+  ctx.restore();
+  ctx.restore();
+}
+
+function renderSurfing(ctx,w,h){
+  const t=Date.now()*.001;
+  const pwr=gamePower/100;
+  const s=gameSceneState;
+  // Sky
+  const sky=ctx.createLinearGradient(0,0,0,h*.45);
+  sky.addColorStop(0,'#87ceeb');sky.addColorStop(1,'#b8e4f9');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,w,h*.45);
+  // Ocean background
+  ctx.fillStyle='#1a6a8a';ctx.fillRect(0,h*.4,w,h*.6);
+  // Wave — big curling wall
+  const waveH=h*(.25+pwr*.15);
+  const waveX=w*(.7-pwr*.5); // wave position moves left as power up
+  ctx.fillStyle='#1d9e75';
+  ctx.beginPath();ctx.moveTo(0,h*.45);
+  for(let i=0;i<=w;i+=4){
+    const wv=Math.sin((i*.012)+t*2)*18+Math.sin((i*.025)-t*1.5)*10;
+    const wy=h*.45-waveH*(1/(1+Math.exp(-(i-waveX)*.02)))+wv;
+    i===0?ctx.moveTo(i,wy):ctx.lineTo(i,wy);
+  }
+  ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();ctx.fill();
+  // Wave face (lighter)
+  ctx.fillStyle='rgba(93,202,165,0.5)';
+  ctx.beginPath();
+  for(let i=waveX-80;i<=waveX+60;i+=4){
+    const wv=Math.sin((i*.012)+t*2)*18+Math.sin((i*.025)-t*1.5)*10;
+    const wy=h*.45-waveH*(1/(1+Math.exp(-(i-waveX)*.02)))+wv;
+    i===waveX-80?ctx.moveTo(i,wy):ctx.lineTo(i,wy);
+  }
+  ctx.lineTo(waveX+60,h*.6);ctx.lineTo(waveX-80,h*.6);ctx.closePath();ctx.fill();
+  // Foam/whitewash
+  ctx.fillStyle='rgba(255,255,255,0.7)';
+  for(let i=0;i<waveX-40;i+=30){
+    const wv=Math.sin((i*.012)+t*2)*18+Math.sin((i*.025)-t*1.5)*10;
+    const wy=h*.45-waveH*(1/(1+Math.exp(-(i-waveX)*.02)))+wv+4;
+    ctx.beginPath();ctx.ellipse(i+t*15%30,wy,15,4,0,0,Math.PI*2);ctx.fill();
+  }
+  // Surfer position on wave
+  const sx=waveX-30+Math.sin(t*3)*8*pwr;
+  const swv=Math.sin((sx*.012)+t*2)*18+Math.sin((sx*.025)-t*1.5)*10;
+  const sy=h*.45-waveH*(1/(1+Math.exp(-(sx-waveX)*.02)))+swv-28;
+  ctx.save();ctx.translate(sx,sy);
+  // Board
+  ctx.fillStyle='#f39c12';ctx.beginPath();ctx.ellipse(0,18,28,5,-.15,0,Math.PI*2);ctx.fill();
+  // Surfer body
+  const lean=-.3+pwr*.15;
+  ctx.rotate(lean);
+  ctx.fillStyle='#2980b9';ctx.fillRect(-6,-18,12,18);
+  ctx.fillStyle='#f5cba7';ctx.beginPath();ctx.arc(0,-24,7,0,Math.PI*2);ctx.fill();
+  // Arms out
+  ctx.strokeStyle='#2980b9';ctx.lineWidth=4;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(-6,-12);ctx.lineTo(-22,-6);ctx.moveTo(6,-12);ctx.lineTo(22,-6);ctx.stroke();
+  // Spray
+  if(pwr>.3){
+    ctx.fillStyle='rgba(255,255,255,0.7)';
+    for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(-25+i*4+Math.sin(t*4+i)*3,14+Math.sin(t*3+i)*4,3,0,Math.PI*2);ctx.fill();}
+  }
+  if(s.celebrate>0){
+    ctx.font='22px serif';ctx.fillText('🤙',10,-40+Math.sin(t*5)*5);
+    s.celebrate--;
+  }
+  ctx.restore();
+  // Score overlay
+  ctx.fillStyle='rgba(0,20,40,0.55)';ctx.beginPath();ctx.roundRect(10,10,120,42,8);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';ctx.textAlign='left';
+  ctx.fillText('Wave power: '+Math.round(pwr*100)+'%',18,28);
+  ctx.fillText('Score: '+gameScore,18,46);
+  ctx.textAlign='left';
+  // Sun
+  ctx.fillStyle='#f9d423';ctx.beginPath();ctx.arc(w*.85,h*.08,22,0,Math.PI*2);ctx.fill();
+}
+
+// ── Init game canvas ──────────────────────────────────────────────────────────
+function initGame(){
+  shuffleGameChars(); // picks random starting set
+  gameSceneState=initSceneState();
+  initGameCanvas();
+  renderGameScene();
+  setGameMsg('🚴 Draw any character — each stroke pedals you up the hill. Finish a character for a bonus burst!');
+}
+
+
+buildSelectors();buildKanaTable();buildPhrases();buildVowels();buildLit();
+setTimeout(initSoloCanvas,100);
+setTimeout(initGame,150);
+</script>
+</body>
+</html>
