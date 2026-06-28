@@ -99,6 +99,16 @@ canvas.readonly{cursor:default;}
 .ann-def{font-size:14px;line-height:1.6;margin-bottom:10px;}
 .ann-ex{font-size:13px;color:var(--text-secondary);padding:10px;background:var(--surface-2);border-radius:var(--radius);border-left:2px solid var(--border-accent);white-space:pre-line;}
 /* ── Collab Kanji ── */
+/* char info card */
+.char-info{background:var(--surface-1);border:0.5px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;display:none;}
+.char-info.visible{display:block;}
+.char-info-header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+.char-info-glyph{font-size:40px;line-height:1;}
+.char-info-romaji{font-size:18px;font-weight:500;color:var(--text-accent);}
+.char-info-meaning{font-size:14px;color:var(--text-secondary);}
+.char-info-rows{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.char-info-tag{font-size:12px;padding:3px 9px;border-radius:10px;border:0.5px solid var(--border);background:var(--surface-2);color:var(--text-secondary);}
+.char-info-tag strong{color:var(--text-primary);font-weight:500;}
 .collab-setup{background:var(--surface-1);border:0.5px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;}
 .setup-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
 .setup-row label{font-size:12px;color:var(--text-muted);display:block;margin-bottom:5px;}
@@ -307,6 +317,16 @@ canvas.readonly{cursor:default;}
         </div>
       </div>
 
+      <!-- Character info card -->
+      <div class="char-info" id="collabCharInfo">
+        <div class="char-info-header">
+          <span class="char-info-glyph" id="collabInfoGlyph"></span>
+          <span class="char-info-romaji" id="collabInfoRomaji"></span>
+          <span class="char-info-meaning" id="collabInfoMeaning"></span>
+        </div>
+        <div class="char-info-rows" id="collabInfoTags"></div>
+      </div>
+
       <div class="collab-canvases">
         <div class="collab-box mine">
           <div class="collab-box-header">
@@ -429,6 +449,16 @@ canvas.readonly{cursor:default;}
     </div>
 
     <div class="game-msg" id="gameMsg">Pick a character and start drawing to power up!</div>
+
+    <!-- Character info card for game mode -->
+    <div class="char-info" id="gameCharInfo">
+      <div class="char-info-header">
+        <span class="char-info-glyph" id="gameInfoGlyph"></span>
+        <span class="char-info-romaji" id="gameInfoRomaji"></span>
+        <span class="char-info-meaning" id="gameInfoMeaning"></span>
+      </div>
+      <div class="char-info-rows" id="gameInfoTags"></div>
+    </div>
 
     <div class="game-layout">
       <div class="game-canvas-wrap">
@@ -599,6 +629,188 @@ function sendMsg(){
   },800);
 }
 
+// ── Character info data ───────────────────────────────────────────────────────
+// Each entry: { romaji, meaning, on?, kun?, type: 'kanji'|'hiragana'|'katakana'|'phrase' }
+const CHAR_DATA = {
+  // ── Kanji ──
+  '山':{romaji:'yama / san',meaning:'mountain',on:'サン (SAN)',kun:'やま (yama)',type:'kanji'},
+  '川':{romaji:'kawa / sen',meaning:'river',on:'セン (SEN)',kun:'かわ (kawa)',type:'kanji'},
+  '日':{romaji:'hi / nichi / ka',meaning:'sun, day',on:'ニチ・ジツ (NICHI/JITSU)',kun:'ひ (hi), か (ka)',type:'kanji'},
+  '月':{romaji:'tsuki / getsu',meaning:'moon, month',on:'ゲツ・ガツ (GETSU/GATSU)',kun:'つき (tsuki)',type:'kanji'},
+  '水':{romaji:'mizu / sui',meaning:'water',on:'スイ (SUI)',kun:'みず (mizu)',type:'kanji'},
+  '火':{romaji:'hi / ka',meaning:'fire',on:'カ (KA)',kun:'ひ (hi)',type:'kanji'},
+  '木':{romaji:'ki / moku',meaning:'tree, wood',on:'モク・ボク (MOKU/BOKU)',kun:'き (ki)',type:'kanji'},
+  '金':{romaji:'kin / kane',meaning:'gold, money, metal',on:'キン・コン (KIN/KON)',kun:'かね (kane)',type:'kanji'},
+  '土':{romaji:'tsuchi / do',meaning:'earth, soil',on:'ド・ト (DO/TO)',kun:'つち (tsuchi)',type:'kanji'},
+  '空':{romaji:'sora / kuu',meaning:'sky, empty',on:'クウ (KUU)',kun:'そら (sora), から (kara)',type:'kanji'},
+  '海':{romaji:'umi / kai',meaning:'sea, ocean',on:'カイ (KAI)',kun:'うみ (umi)',type:'kanji'},
+  '花':{romaji:'hana / ka',meaning:'flower',on:'カ (KA)',kun:'はな (hana)',type:'kanji'},
+  '雨':{romaji:'ame / u',meaning:'rain',on:'ウ (U)',kun:'あめ (ame), あま (ama)',type:'kanji'},
+  '風':{romaji:'kaze / fuu',meaning:'wind',on:'フウ・フ (FUU/FU)',kun:'かぜ (kaze)',type:'kanji'},
+  '雪':{romaji:'yuki / setsu',meaning:'snow',on:'セツ (SETSU)',kun:'ゆき (yuki)',type:'kanji'},
+  '石':{romaji:'ishi / seki',meaning:'stone, rock',on:'セキ・シャク (SEKI/SHAKU)',kun:'いし (ishi)',type:'kanji'},
+  '草':{romaji:'kusa / sou',meaning:'grass, plant',on:'ソウ (SOU)',kun:'くさ (kusa)',type:'kanji'},
+  '森':{romaji:'mori / shin',meaning:'forest',on:'シン (SHIN)',kun:'もり (mori)',type:'kanji'},
+  '人':{romaji:'hito / jin',meaning:'person, human',on:'ジン・ニン (JIN/NIN)',kun:'ひと (hito)',type:'kanji'},
+  '口':{romaji:'kuchi / kou',meaning:'mouth, opening',on:'コウ・ク (KOU/KU)',kun:'くち (kuchi)',type:'kanji'},
+  '手':{romaji:'te / shu',meaning:'hand',on:'シュ (SHU)',kun:'て (te)',type:'kanji'},
+  '足':{romaji:'ashi / soku',meaning:'foot, leg, enough',on:'ソク (SOKU)',kun:'あし (ashi), た- (ta-)',type:'kanji'},
+  '目':{romaji:'me / moku',meaning:'eye',on:'モク・ボク (MOKU/BOKU)',kun:'め (me)',type:'kanji'},
+  '耳':{romaji:'mimi / ji',meaning:'ear',on:'ジ (JI)',kun:'みみ (mimi)',type:'kanji'},
+  '心':{romaji:'kokoro / shin',meaning:'heart, mind, spirit',on:'シン (SHIN)',kun:'こころ (kokoro)',type:'kanji'},
+  '力':{romaji:'chikara / ryoku',meaning:'power, strength',on:'リョク・リキ (RYOKU/RIKI)',kun:'ちから (chikara)',type:'kanji'},
+  '女':{romaji:'onna / jo',meaning:'woman, female',on:'ジョ・ニョ (JO/NYO)',kun:'おんな (onna)',type:'kanji'},
+  '男':{romaji:'otoko / dan',meaning:'man, male',on:'ダン・ナン (DAN/NAN)',kun:'おとこ (otoko)',type:'kanji'},
+  '子':{romaji:'ko / shi',meaning:'child',on:'シ・ス (SHI/SU)',kun:'こ (ko)',type:'kanji'},
+  '父':{romaji:'chichi / fu',meaning:'father',on:'フ (FU)',kun:'ちち (chichi)',type:'kanji'},
+  '母':{romaji:'haha / bo',meaning:'mother',on:'ボ (BO)',kun:'はは (haha)',type:'kanji'},
+  '友':{romaji:'tomo / yuu',meaning:'friend',on:'ユウ (YUU)',kun:'とも (tomo)',type:'kanji'},
+  '食':{romaji:'ta-beru / shoku',meaning:'eat, food',on:'ショク (SHOKU)',kun:'た- (ta-), く- (ku-)',type:'kanji'},
+  '飲':{romaji:'no-mu / in',meaning:'drink',on:'イン (IN)',kun:'の- (no-)',type:'kanji'},
+  '見':{romaji:'mi-ru / ken',meaning:'see, look',on:'ケン (KEN)',kun:'み- (mi-)',type:'kanji'},
+  '聞':{romaji:'ki-ku / bun',meaning:'hear, listen, ask',on:'ブン・モン (BUN/MON)',kun:'き- (ki-), き-こえる (ki-koeru)',type:'kanji'},
+  '言':{romaji:'i-u / gen',meaning:'say, speak',on:'ゲン・ゴン (GEN/GON)',kun:'い- (i-), こと (koto)',type:'kanji'},
+  '書':{romaji:'ka-ku / sho',meaning:'write',on:'ショ (SHO)',kun:'か- (ka-)',type:'kanji'},
+  '読':{romaji:'yo-mu / doku',meaning:'read',on:'ドク・トク (DOKU/TOKU)',kun:'よ- (yo-)',type:'kanji'},
+  '学':{romaji:'mana-bu / gaku',meaning:'study, learn',on:'ガク (GAKU)',kun:'まな- (mana-)',type:'kanji'},
+  '行':{romaji:'i-ku / kou',meaning:'go',on:'コウ・ギョウ (KOU/GYOU)',kun:'い- (i-), ゆ- (yu-)',type:'kanji'},
+  '来':{romaji:'ku-ru / rai',meaning:'come',on:'ライ (RAI)',kun:'く- (ku-), き- (ki-)',type:'kanji'},
+  '出':{romaji:'de-ru / shutsu',meaning:'exit, come out',on:'シュツ・スイ (SHUTSU/SUI)',kun:'で- (de-), だ- (da-)',type:'kanji'},
+  '入':{romaji:'i-ru / nyuu',meaning:'enter, put in',on:'ニュウ (NYUU)',kun:'い- (i-), はい- (hai-)',type:'kanji'},
+  '上':{romaji:'ue / jou',meaning:'up, above, top',on:'ジョウ (JOU)',kun:'うえ (ue), うわ (uwa), かみ (kami)',type:'kanji'},
+  '下':{romaji:'shita / ka',meaning:'down, below, under',on:'カ・ゲ (KA/GE)',kun:'した (shita), しも (shimo)',type:'kanji'},
+  // Yojijukugo & compound kanji
+  '七転び八起き':{romaji:'nana korobi ya oki',meaning:'Fall seven times, rise eight — perseverance',type:'phrase'},
+  '一期一会':{romaji:'ichi-go ichi-e',meaning:'Once in a lifetime encounter — treasure each moment',type:'phrase'},
+  '花鳥風月':{romaji:'ka-chou fuu-getsu',meaning:'Flowers, birds, wind, moon — the beauty of nature',type:'phrase'},
+  '以心伝心':{romaji:'i-shin den-shin',meaning:'Heart-to-heart communication — unspoken understanding',type:'phrase'},
+  '物の哀れ':{romaji:'mono no aware',meaning:'The pathos of things — bittersweet appreciation of life',type:'phrase'},
+  '山川草木':{romaji:'san-sen sou-moku',meaning:'Mountains, rivers, grass, trees — all of nature',type:'phrase'},
+  '春夏秋冬':{romaji:'shun-ka shuu-tou',meaning:'Spring, summer, autumn, winter — the four seasons',type:'phrase'},
+  '七転八倒':{romaji:'shichi-ten bat-tou',meaning:'Rolling around in agony — extreme suffering',type:'phrase'},
+  // ── Hiragana ──
+  'あ':{romaji:'a',meaning:'vowel — like "ah" in "father"',type:'hiragana'},
+  'い':{romaji:'i',meaning:'vowel — like "ee" in "feet"',type:'hiragana'},
+  'う':{romaji:'u',meaning:'vowel — like "oo" but lips unrounded',type:'hiragana'},
+  'え':{romaji:'e',meaning:'vowel — like "e" in "bed"',type:'hiragana'},
+  'お':{romaji:'o',meaning:'vowel — like "o" in "go"',type:'hiragana'},
+  'か':{romaji:'ka',meaning:'"k" + "a" — like "car"',type:'hiragana'},
+  'き':{romaji:'ki',meaning:'"k" + "i" — like "key"',type:'hiragana'},
+  'く':{romaji:'ku',meaning:'"k" + "u" — like "coo"',type:'hiragana'},
+  'け':{romaji:'ke',meaning:'"k" + "e" — like "keg"',type:'hiragana'},
+  'こ':{romaji:'ko',meaning:'"k" + "o" — like "co-"',type:'hiragana'},
+  'さ':{romaji:'sa',meaning:'"s" + "a" — like "saw"',type:'hiragana'},
+  'し':{romaji:'shi',meaning:'like "she" — not "si"',type:'hiragana'},
+  'す':{romaji:'su',meaning:'"s" + "u" — like "sue"',type:'hiragana'},
+  'せ':{romaji:'se',meaning:'"s" + "e" — like "set"',type:'hiragana'},
+  'そ':{romaji:'so',meaning:'"s" + "o" — like "so"',type:'hiragana'},
+  'た':{romaji:'ta',meaning:'"t" + "a" — like "ta"',type:'hiragana'},
+  'ち':{romaji:'chi',meaning:'like "cheese" — not "ti"',type:'hiragana'},
+  'つ':{romaji:'tsu',meaning:'"ts" + "u" — no English equivalent',type:'hiragana'},
+  'て':{romaji:'te',meaning:'"t" + "e" — like "ten"',type:'hiragana'},
+  'と':{romaji:'to',meaning:'"t" + "o" — like "toe"',type:'hiragana'},
+  'な':{romaji:'na',meaning:'"n" + "a" — like "nah"',type:'hiragana'},
+  'に':{romaji:'ni',meaning:'"n" + "i" — like "knee"',type:'hiragana'},
+  'ぬ':{romaji:'nu',meaning:'"n" + "u" — like "new"',type:'hiragana'},
+  'ね':{romaji:'ne',meaning:'"n" + "e" — like "net"',type:'hiragana'},
+  'の':{romaji:'no',meaning:'"n" + "o" — like "no"',type:'hiragana'},
+  'は':{romaji:'ha',meaning:'"h" + "a" — like "hah"',type:'hiragana'},
+  'ひ':{romaji:'hi',meaning:'"h" + "i" — like "he"',type:'hiragana'},
+  'ふ':{romaji:'fu',meaning:'soft breath — lighter than English "f"',type:'hiragana'},
+  'へ':{romaji:'he',meaning:'"h" + "e" — like "hey"',type:'hiragana'},
+  'ほ':{romaji:'ho',meaning:'"h" + "o" — like "ho"',type:'hiragana'},
+  'ま':{romaji:'ma',meaning:'"m" + "a" — like "ma"',type:'hiragana'},
+  'み':{romaji:'mi',meaning:'"m" + "i" — like "me"',type:'hiragana'},
+  'む':{romaji:'mu',meaning:'"m" + "u" — like "moo"',type:'hiragana'},
+  'め':{romaji:'me',meaning:'"m" + "e" — like "men"',type:'hiragana'},
+  'も':{romaji:'mo',meaning:'"m" + "o" — like "more"',type:'hiragana'},
+  'や':{romaji:'ya',meaning:'"y" + "a" — like "yard"',type:'hiragana'},
+  'ゆ':{romaji:'yu',meaning:'"y" + "u" — like "you"',type:'hiragana'},
+  'よ':{romaji:'yo',meaning:'"y" + "o" — like "yo"',type:'hiragana'},
+  'ら':{romaji:'ra',meaning:'tap "r" + "a" — tongue taps once, between r and l',type:'hiragana'},
+  'り':{romaji:'ri',meaning:'tap "r" + "i" — like "ree" with a tap',type:'hiragana'},
+  'る':{romaji:'ru',meaning:'tap "r" + "u" — like "roo" with a tap',type:'hiragana'},
+  'れ':{romaji:'re',meaning:'tap "r" + "e" — like "reh" with a tap',type:'hiragana'},
+  'ろ':{romaji:'ro',meaning:'tap "r" + "o" — like "row" with a tap',type:'hiragana'},
+  'わ':{romaji:'wa',meaning:'"w" + "a" — like "wa"',type:'hiragana'},
+  'を':{romaji:'wo / o',meaning:'object marker particle — mostly written, rarely spoken alone',type:'hiragana'},
+  'ん':{romaji:'n',meaning:'syllabic "n" — nasal, never starts a word',type:'hiragana'},
+};
+
+// Phrases from PRACTICE_PHRASES
+const PHRASE_DATA = {
+  'ありがとう':{romaji:'arigatou',meaning:'Thank you (casual)',type:'phrase'},
+  'おはようございます':{romaji:'ohayou gozaimasu',meaning:'Good morning (polite)',type:'phrase'},
+  'こんにちは':{romaji:'konnichiwa',meaning:'Hello / Good afternoon',type:'phrase'},
+  'こんばんは':{romaji:'konbanwa',meaning:'Good evening',type:'phrase'},
+  'おやすみなさい':{romaji:'oyasumi nasai',meaning:'Good night',type:'phrase'},
+  'すみません':{romaji:'sumimasen',meaning:'Excuse me / I\'m sorry',type:'phrase'},
+  'はじめまして':{romaji:'hajimemashite',meaning:'Nice to meet you',type:'phrase'},
+  'よろしくおねがいします':{romaji:'yoroshiku onegaishimasu',meaning:'Please treat me well / I\'m in your care',type:'phrase'},
+  'いってきます':{romaji:'ittekimasu',meaning:'I\'m heading out (said when leaving home)',type:'phrase'},
+  'ただいま':{romaji:'tadaima',meaning:'I\'m home',type:'phrase'},
+  'いただきます':{romaji:'itadakimasu',meaning:'Said before eating — I humbly receive',type:'phrase'},
+  'ごちそうさまでした':{romaji:'gochisousama deshita',meaning:'Said after eating — thank you for the meal',type:'phrase'},
+  'おつかれさまでした':{romaji:'otsukaresama deshita',meaning:'Thank you for your hard work',type:'phrase'},
+  'きをつけて':{romaji:'ki wo tsukete',meaning:'Take care / be careful',type:'phrase'},
+  'どうぞよろしく':{romaji:'douzo yoroshiku',meaning:'Please be kind to me',type:'phrase'},
+  'しつれいします':{romaji:'shitsurei shimasu',meaning:'Excuse me / pardon me (formal)',type:'phrase'},
+  'おねがいします':{romaji:'onegai shimasu',meaning:'Please (requesting a favour)',type:'phrase'},
+  'もうしわけございません':{romaji:'moushiwake gozaimasen',meaning:'I am terribly sorry (very formal)',type:'phrase'},
+  'かしこまりました':{romaji:'kashikomarimashita',meaning:'Certainly (very formal acknowledgement)',type:'phrase'},
+  'おじゃまします':{romaji:'ojama shimasu',meaning:'Pardon the intrusion (said when entering someone\'s space)',type:'phrase'},
+  'よろしければ':{romaji:'yoroshikereba',meaning:'If it is alright with you',type:'phrase'},
+  'おかげさまで':{romaji:'okagesamade',meaning:'Thanks to you (I am well)',type:'phrase'},
+  'どうぞおかまいなく':{romaji:'douzo okamainaku',meaning:'Please don\'t mind me / don\'t go to any trouble',type:'phrase'},
+  'たいへんおせわになりました':{romaji:'taihen osewa ni narimashita',meaning:'Thank you very much for your help / care',type:'phrase'},
+};
+
+function getCharInfo(ch){
+  if(!ch) return null;
+  // Check direct match in CHAR_DATA first
+  if(CHAR_DATA[ch]) return CHAR_DATA[ch];
+  if(PHRASE_DATA[ch]) return PHRASE_DATA[ch];
+  // Check if it's a phrase we know from PRACTICE_PHRASES
+  for(const tab of Object.values(PRACTICE_PHRASES||{})){
+    for(const p of tab){
+      if(p.jp===ch) return {romaji:p.rd,meaning:p.en,type:'phrase'};
+    }
+  }
+  return null;
+}
+
+function renderCharInfo(info, glyphId, romajiId, meaningId, tagsId, cardId){
+  const card = document.getElementById(cardId);
+  if(!info){ card.classList.remove('visible'); return; }
+  card.classList.add('visible');
+  document.getElementById(glyphId).textContent = '';
+  document.getElementById(romajiId).textContent = info.romaji || '';
+  document.getElementById(meaningId).textContent = info.meaning || '';
+  const tags = document.getElementById(tagsId);
+  tags.innerHTML = '';
+  if(info.type === 'kanji'){
+    if(info.on) tags.innerHTML += `<span class="char-info-tag">音読み <strong>${info.on}</strong></span>`;
+    if(info.kun) tags.innerHTML += `<span class="char-info-tag">訓読み <strong>${info.kun}</strong></span>`;
+    tags.innerHTML += `<span class="char-info-tag">Type <strong>Kanji</strong></span>`;
+  } else if(info.type === 'hiragana'){
+    tags.innerHTML += `<span class="char-info-tag">Type <strong>Hiragana</strong></span>`;
+    tags.innerHTML += `<span class="char-info-tag">Pronunciation tip <strong>${info.meaning}</strong></span>`;
+    document.getElementById(meaningId).textContent = '';
+  } else if(info.type === 'phrase'){
+    tags.innerHTML += `<span class="char-info-tag">Type <strong>Phrase / Expression</strong></span>`;
+  }
+}
+
+function showCollabCharInfo(ch){
+  const info = getCharInfo(ch);
+  renderCharInfo(info,'collabInfoGlyph','collabInfoRomaji','collabInfoMeaning','collabInfoTags','collabCharInfo');
+}
+
+function showGameCharInfo(ch){
+  const info = getCharInfo(ch);
+  renderCharInfo(info,'gameInfoGlyph','gameInfoRomaji','gameInfoMeaning','gameInfoTags','gameCharInfo');
+}
+
 // ── Collab Kanji ──────────────────────────────────────────────────────────────
 let peer=null,conn=null;
 let myStrokes=[],theirStrokes=[];
@@ -761,6 +973,7 @@ function updateTargetDisplay(){
   } else {
     d.style.display='none';
   }
+  showCollabCharInfo(tChar);
   resizeCollabCanvases();
   redrawMine();redrawTheirs();
 }
@@ -1027,6 +1240,7 @@ function resetGameChar(){
   buildGameCharSelector(); // refresh opacity states + count
   updateCyclingUI();
   redrawGameCanvas();
+  showGameCharInfo(gameChar);
   setGameMsg('🚴 Drawing ' + gameChar + ' — every stroke pedals you further!');
 }
 
@@ -1113,6 +1327,7 @@ function completeGameChar(){
   // Reset canvas for next attempt
   gameStrokes=[];gameCurStroke=[];cycling.strokesThisChar=0;
   document.getElementById('gameStrokeCount').textContent='0 strokes';
+  showGameCharInfo(gameChar);
   redrawGameCanvas();
 }
 
@@ -1533,6 +1748,7 @@ function initGame(){
   gameSceneState=initSceneState();
   initGameCanvas();
   renderGameScene();
+  showGameCharInfo(gameChar);
   setGameMsg('🚴 Draw any character — each stroke pedals you up the hill. Finish a character for a bonus burst!');
 }
 
